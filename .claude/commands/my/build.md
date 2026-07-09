@@ -1,5 +1,10 @@
 ---
-description: Break a task into a reviewed, subagent-executed build loop
+description: >-
+  Break a task into a reviewed, subagent-executed build loop.
+  TRIGGER — invoke whenever the user wants a non-trivial task actually
+  implemented end-to-end, not just planned (e.g. "build X", "implement X",
+  "add feature X", "let's get this done"). SKIP for read-only planning — use
+  my:scope instead.
 argument-hint: [what you want to build]
 ---
 

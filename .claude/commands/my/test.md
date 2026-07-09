@@ -1,5 +1,9 @@
 ---
-description: Find the project's test runner and run tests for the current change
+description: >-
+  Find the project's test runner and run tests for the current change.
+  TRIGGER — invoke whenever the user asks to run tests, check whether tests
+  pass, or verify a change via its test suite (e.g. "run the tests", "do the
+  tests pass", "verify this works").
 argument-hint: [optional: specific test/path to focus on]
 ---
 

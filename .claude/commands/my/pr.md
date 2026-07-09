@@ -1,5 +1,9 @@
 ---
-description: Summarize the branch and open a pull request (with confirmation)
+description: >-
+  Summarize the branch and open a pull request (with confirmation).
+  TRIGGER — invoke whenever the user asks to open/create a pull request or put
+  a branch up for review (e.g. "open a PR", "make a pull request", "ship this
+  branch", "put this up for review").
 argument-hint: [optional: base branch]
 ---
 

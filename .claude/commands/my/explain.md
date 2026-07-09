@@ -1,5 +1,10 @@
 ---
-description: Explain a file, symbol, or concept at a high level
+description: >-
+  Explain a file, symbol, or concept at a high level.
+  TRIGGER — invoke whenever the user asks what something is or does, or how it
+  works (e.g. "what does X do", "explain this function", "how does X work",
+  "walk me through this file"). SKIP when the question is specifically about a
+  third-party package/library — use my:deps instead.
 argument-hint: [file, symbol, or topic]
 ---
 

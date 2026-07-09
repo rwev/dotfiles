@@ -1,5 +1,9 @@
 ---
-description: Checkpoint current work-in-progress with a labeled stash
+description: >-
+  Checkpoint current work-in-progress with a labeled stash.
+  TRIGGER — invoke whenever the user wants to save or checkpoint in-progress
+  work without committing it (e.g. "save my progress", "checkpoint this",
+  "stash this for now", "let me park this and switch branches").
 argument-hint: [optional: short label]
 ---
 

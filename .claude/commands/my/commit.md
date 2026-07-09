@@ -1,5 +1,11 @@
 ---
-description: Stage changes and write a concise conventional-commit message
+description: >-
+  Stage changes and write a concise conventional-commit message.
+  TRIGGER — invoke whenever the user asks to commit, save, or check in changes,
+  including as one step of a larger instruction (e.g. "commit this", "make sure
+  changes are committed", "commit and push", "commit then do X") or when asking
+  to reword/rewrite a commit message. Prefer this over running `git commit`
+  directly.
 ---
 
 Review the current working-tree changes and create a git commit.
