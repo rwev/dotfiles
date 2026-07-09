@@ -1,0 +1,50 @@
+[credential "https://github.com"]
+	helper =
+	helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !gh auth git-credential
+[user]
+	name = rwev
+	email = ryan@everett.is
+[alias]
+	s = status
+	a = add
+	aa = add .
+	c = commit
+	cm = commit -m
+	ca = commit --amend
+	can = commit --amend --no-edit
+	p = push
+	pf = push --force-with-lease
+	pl = pull
+	ps = push
+	co = checkout
+	cob = checkout -b
+	sw = switch
+	swc = switch -c
+	b = branch
+	bd = branch -d
+	bD = branch -D
+	rh = reset --hard
+	rs = reset --soft
+	rb = rebase
+	rbc = rebase --continue
+	rba = rebase --abort
+	cp = cherry-pick
+	st = stash
+	sc = stash clear
+	sa = stash apply
+	stp = stash pop
+	stl = stash list
+	l = log --oneline --graph --decorate
+	la = log --oneline --graph --decorate --all
+	d = diff
+	ds = diff --staged
+	m = merge
+	f = fetch
+	fa = fetch --all
+[push]
+	autoSetupRemote = true
+[pull]
+	rebase = true

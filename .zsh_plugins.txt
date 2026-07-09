@@ -1,0 +1,20 @@
+# Plugin list for antidote
+# Docs: https://antidote.sh
+
+# Pure prompt — must be kind:fpath so promptinit can find it
+sindresorhus/pure kind:fpath
+
+# Additional completions (must come before compinit)
+zsh-users/zsh-completions kind:fpath
+
+# Fish-like autosuggestions (grey ghost text)
+zsh-users/zsh-autosuggestions
+
+# Syntax highlighting — must be last (or near-last) among these three
+zsh-users/zsh-syntax-highlighting
+
+# Up/down arrow history search
+zsh-users/zsh-history-substring-search
+
+# Fast directory jumping: z <partial-dir-name>
+agkozak/zsh-z

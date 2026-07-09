@@ -1,0 +1,9 @@
+# Machine-local overrides — never commit these
+.gitconfig.local
+
+# Claude Code — machine-local overrides / runtime, never commit
+.claude/settings.local.json
+.claude/**/*.local.json
+
+# macOS
+.DS_Store
