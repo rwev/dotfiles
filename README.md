@@ -93,11 +93,34 @@ Shell aliases (in `.zshrc`): `cld` = `claude --dangerously-skip-permissions`,
 
 ### Machine-local overrides
 
-Anything you don't want committed — a per-machine `model`, work-only permission rules,
-or an override of any committed setting — goes in `~/.claude/settings.local.json`. It's
-gitignored and merges over `settings.json`. To try a different output style on one
-machine without editing the tracked file, set `"outputStyle"` there or just run
-`/output-style` in a session.
+`~/.claude/settings.json` isn't a symlink — Claude Code's own `settings.local.json`
+layering only applies inside a project's `.claude/`, there's no global equivalent, so
+`install.sh` does the merging itself. On first run, any real pre-existing
+`~/.claude/settings.json` is captured verbatim into `~/.claude/settings.local.json`;
+every run after, `install.sh` regenerates `settings.json` as `.claude/settings.json`
+(tracked) deep-merged with `settings.local.json` (local), with local winning any
+conflicting key — same idea as `~/.zshrc` sourcing `.zshrc.core`, just merged at
+install time instead of sourced at shell-start. `settings.local.json` lives outside
+this repo and is hand-editable any time; edits take effect on the next `install.sh`
+run. To try a different output style on one machine, set `"outputStyle"` there or
+just run `/output-style` in a session.
+
+## OpenCode
+
+[OpenCode](https://opencode.ai) config is version-controlled here too and wired
+into `~/.config/opencode/` by `install.sh`, reusing the Claude Code config above
+rather than duplicating it:
+
+| Link | What it reuses |
+|---|---|
+| `~/.config/opencode/AGENTS.md` → `.claude/CLAUDE.md` | Same global working-style/safety rules |
+| `~/.config/opencode/command/my` → `.claude/commands/my` | Same `/my:*` commands — the frontmatter/`$ARGUMENTS` syntax is compatible as-is |
+| `~/.config/opencode/agents` → `.opencode/agents/` | Native OpenCode versions of `_my-implementer`/`_my-debugger`/`_my-reviewer`, same prose, translated to OpenCode's `mode`/`permission` schema (Claude's `tools:` list has no OpenCode equivalent) |
+| `~/.config/opencode/opencode.json` | Generated from `.opencode/opencode.json` merged with `~/.config/opencode/opencode.local.json` — same merge mechanism as `settings.json` above, not a symlink. Folds in the `my-humble-servant` output style via `instructions` and mirrors the secret-file read denies from `.claude/settings.json` |
+
+Not ported: Claude-specific runtime settings with no OpenCode equivalent
+(statusline, auto-memory, theme) and marketplace plugins (`code-review`, `verify`,
+etc.) — those live outside this repo.
 
 ## File layout
 
@@ -106,7 +129,8 @@ dotfiles/
 ├── install.sh          # Bootstrap: installs zsh, fzf, antidote; symlinks files
 ├── .zshrc              # Main zsh config (symlinked to ~/.zshrc.core; ~/.zshrc loads it)
 ├── .zsh_plugins.txt    # antidote plugin list
-└── .claude/            # Claude Code config (settings, CLAUDE.md, statusline, commands, agents, output styles)
+├── .claude/            # Claude Code config (settings, CLAUDE.md, statusline, commands, agents, output styles)
+└── .opencode/          # OpenCode config (opencode.json, agents) — reuses .claude/ where schemas allow
 ```
 
 ## Updating plugins

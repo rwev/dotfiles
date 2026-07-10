@@ -71,6 +71,41 @@ link_file() {
   run ln -sf "$src" "$dest"
 }
 
+# Merge a tracked JSON config with whatever real, machine-local JSON already
+# lives at dest, instead of symlinking over it — same idea as ~/.zshrc
+# sourcing .zshrc.core, but merged at install time since JSON has no
+# "source". local_override always wins on conflicting keys; the tracked file
+# fills in anything it doesn't set. dest ends up a plain generated file,
+# never a symlink.
+merge_json_file() {
+  local dotfiles_src="$1"
+  local dest="$2"
+  local local_override="$3"
+
+  run mkdir -p "$(dirname "$dest")"
+
+  # Old-style direct symlink from a prior install.sh: drop it so the capture
+  # check below can't mistake the tracked file's own content, read through
+  # the symlink, for machine-local customization.
+  if [[ -L "$dest" ]]; then
+    info "Removing old symlink at $dest"
+    run rm "$dest"
+  fi
+
+  # First run only: capture whatever real content is already there as the
+  # machine-local baseline, before it gets replaced by a generated file.
+  if [[ -e "$dest" && ! -e "$local_override" ]]; then
+    info "Preserving existing $dest → $local_override"
+    run cp "$dest" "$local_override"
+  fi
+
+  [[ -e "$local_override" ]] || run bash -c "echo '{}' > '$local_override'"
+  jq empty "$local_override" 2>/dev/null || run bash -c "echo '{}' > '$local_override'"
+
+  info "Merging $dotfiles_src + $local_override → $dest"
+  run bash -c "jq -s '.[0] * .[1]' '$dotfiles_src' '$local_override' > '$dest.tmp' && mv '$dest.tmp' '$dest'"
+}
+
 symlink_dotfiles() {
   link_file "$DOTFILES_DIR/.zshrc"           "$HOME/.zshrc.core"
   link_file "$DOTFILES_DIR/.zsh_plugins.txt" "$HOME/.zsh_plugins.txt"
@@ -108,12 +143,23 @@ ensure_zshrc_loader() {
 # which also holds runtime data (sessions, cache, tokens, auto-memory).
 symlink_claude() {
   run mkdir -p "$HOME/.claude"
-  link_file "$DOTFILES_DIR/.claude/settings.json" "$HOME/.claude/settings.json"
+  merge_json_file "$DOTFILES_DIR/.claude/settings.json" "$HOME/.claude/settings.json" "$HOME/.claude/settings.local.json"
   link_file "$DOTFILES_DIR/.claude/CLAUDE.md"     "$HOME/.claude/CLAUDE.md"
   link_file "$DOTFILES_DIR/.claude/statusline.sh" "$HOME/.claude/statusline.sh"
   link_file "$DOTFILES_DIR/.claude/commands"      "$HOME/.claude/commands"
   link_file "$DOTFILES_DIR/.claude/agents"        "$HOME/.claude/agents"
   link_file "$DOTFILES_DIR/.claude/output-styles" "$HOME/.claude/output-styles"
+}
+
+# Symlink OpenCode config, reusing Claude Code's tracked config where the
+# schemas line up (rules file, /my:* commands) and adding OpenCode-native
+# files only where the frontmatter schema genuinely differs (agents).
+symlink_opencode() {
+  run mkdir -p "$HOME/.config/opencode/command"
+  link_file "$DOTFILES_DIR/.claude/CLAUDE.md"       "$HOME/.config/opencode/AGENTS.md"
+  merge_json_file "$DOTFILES_DIR/.opencode/opencode.json" "$HOME/.config/opencode/opencode.json" "$HOME/.config/opencode/opencode.local.json"
+  link_file "$DOTFILES_DIR/.opencode/agents"        "$HOME/.config/opencode/agents"
+  link_file "$DOTFILES_DIR/.claude/commands/my"     "$HOME/.config/opencode/command/my"
 }
 
 # =============================================================================
@@ -173,6 +219,7 @@ main() {
   symlink_dotfiles
   ensure_zshrc_loader
   symlink_claude
+  symlink_opencode
   set_default_shell
   install_antidote
 
