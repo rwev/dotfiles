@@ -36,8 +36,11 @@ install_packages() {
 
   info "Installing: ${packages[*]}"
   if command -v apt-get &>/dev/null; then
-    run sudo apt-get update -qq
-    run sudo apt-get install -y "${packages[@]}"
+    run sudo apt-get update -qq || warn "apt-get update failed — attempting install anyway"
+    run sudo apt-get install -y "${packages[@]}" || {
+      error "apt-get install failed — you may need to fix APT repository config or install packages manually"
+      exit 1
+    }
   elif command -v brew &>/dev/null; then
     run brew install "${packages[@]}"
   elif command -v dnf &>/dev/null; then
