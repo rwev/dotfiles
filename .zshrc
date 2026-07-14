@@ -22,9 +22,23 @@ autoload -U promptinit && promptinit
 PURE_PROMPT_SYMBOL='$'
 prompt pure
 
-# Pure tweaks: show prompt on a new line, async git
-zstyle ':prompt:pure:prompt:*' color 142   # gruvbox bright green
-zstyle ':prompt:pure:git:*' color 109     # gruvbox blue
+# Pure tweaks: portable ANSI colors (work across light/dark terminal themes)
+zstyle ':prompt:pure:execution_time' color yellow         # caution: slow commands
+zstyle ':prompt:pure:git:arrow' color cyan
+zstyle ':prompt:pure:git:stash' color cyan
+zstyle ':prompt:pure:git:branch' color green              # fresh branch info
+zstyle ':prompt:pure:git:branch:cached' color yellow      # stale/cached branch info
+zstyle ':prompt:pure:git:action' color yellow             # caution: rebase/merge etc
+zstyle ':prompt:pure:git:dirty' color red                 # warning: uncommitted changes
+zstyle ':prompt:pure:host' color 8                        # muted secondary text
+zstyle ':prompt:pure:path' color blue
+zstyle ':prompt:pure:prompt:error' color red
+zstyle ':prompt:pure:prompt:success' color green
+zstyle ':prompt:pure:prompt:continuation' color 8         # muted secondary text
+zstyle ':prompt:pure:suspended_jobs' color red            # warning
+zstyle ':prompt:pure:user' color 8                        # muted secondary text
+zstyle ':prompt:pure:user:root' color red                 # warning: root shell
+zstyle ':prompt:pure:virtualenv' color 8                  # muted secondary text
 
 # =============================================================================
 # Completion
