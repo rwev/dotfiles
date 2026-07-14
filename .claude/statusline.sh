@@ -7,10 +7,10 @@
 # =============================================================================
 input="$(cat)"
 
-model="" dir="" cost="" added="" removed="" limit_pct="" limit_resets=""
+model="" dir="" cost="" added="" removed="" limit_pct="" limit_resets="" ctx_pct=""
 
 if command -v jq &>/dev/null; then
-  IFS=$'\t' read -r model dir cost added removed limit_pct limit_resets <<<"$(
+  IFS=$'\t' read -r model dir cost added removed limit_pct limit_resets ctx_pct <<<"$(
     printf '%s' "$input" | jq -r '
       [ (.model.display_name // ""),
         (.workspace.current_dir // .cwd // ""),
@@ -18,11 +18,12 @@ if command -v jq &>/dev/null; then
         (.cost.total_lines_added // 0),
         (.cost.total_lines_removed // 0),
         (.rate_limits.five_hour.used_percentage // ""),
-        (.rate_limits.five_hour.resets_at // "")
+        (.rate_limits.five_hour.resets_at // ""),
+        (.context_window.used_percentage // "")
       ] | @tsv' 2>/dev/null
   )"
 elif command -v python3 &>/dev/null; then
-  IFS=$'\t' read -r model dir cost added removed limit_pct limit_resets <<<"$(
+  IFS=$'\t' read -r model dir cost added removed limit_pct limit_resets ctx_pct <<<"$(
     printf '%s' "$input" | python3 -c '
 import sys, json
 try:
@@ -34,10 +35,12 @@ ws = d.get("workspace") or {}
 cwd = ws.get("current_dir") or d.get("cwd") or ""
 c = d.get("cost") or {}
 fh = ((d.get("rate_limits") or {}).get("five_hour") or {})
+cw = d.get("context_window") or {}
 print("\t".join(str(x) for x in (
     m, cwd, c.get("total_cost_usd", 0),
     c.get("total_lines_added", 0), c.get("total_lines_removed", 0),
     fh.get("used_percentage", ""), fh.get("resets_at", ""),
+    cw.get("used_percentage", ""),
 )))
 ' 2>/dev/null
   )"
@@ -64,6 +67,9 @@ lines_fmt=""
 limit_fmt=""
 [[ -n "$limit_pct" ]] && limit_fmt="$(awk -v p="$limit_pct" 'BEGIN { printf "%.0f%% session", p }')"
 
+ctx_fmt=""
+[[ -n "$ctx_pct" ]] && ctx_fmt="$(awk -v p="$ctx_pct" 'BEGIN { printf "%.0f%% ctx", p }')"
+
 resets_fmt=""
 if [[ -n "$limit_resets" ]]; then
   resets_fmt="$(awk -v r="$limit_resets" -v now="$(date +%s)" '
@@ -85,6 +91,7 @@ segments=()
 [[ -n "$branch" ]]     && segments+=("$branch")
 [[ -n "$cost_fmt" ]]   && segments+=("$cost_fmt")
 [[ -n "$lines_fmt" ]]  && segments+=("$lines_fmt")
+[[ -n "$ctx_fmt" ]]    && segments+=("$ctx_fmt")
 [[ -n "$limit_fmt" ]]  && segments+=("$limit_fmt")
 [[ -n "$resets_fmt" ]] && segments+=("$resets_fmt")
 
