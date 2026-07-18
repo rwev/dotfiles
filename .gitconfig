@@ -12,9 +12,11 @@
 	a = add
 	aa = add .
 	c = commit
-	cm = commit -m
+	cm = commit -am
 	ca = commit --amend
 	can = commit --amend --no-edit
+	caa = commit -a --amend
+	caan = commit -a --amend --no-edit
 	p = push
 	pf = push --force-with-lease
 	pl = pull
@@ -26,6 +28,7 @@
 	b = branch
 	bd = branch -d
 	bD = branch -D
+	ba = branch -a
 	rh = reset --hard
 	rs = reset --soft
 	rb = rebase
@@ -37,13 +40,18 @@
 	sa = stash apply
 	stp = stash pop
 	stl = stash list
+	sd = stash drop
 	l = log --oneline --graph --decorate
 	la = log --oneline --graph --decorate --all
 	d = diff
 	ds = diff --staged
 	m = merge
+	sh = show
+	bl = blame
 	f = fetch
 	fa = fetch --all
+	r = remote
+	rv = remote -v
 [push]
 	autoSetupRemote = true
 [pull]
