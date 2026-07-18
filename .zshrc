@@ -169,6 +169,10 @@ export LESS='-R --quit-if-one-screen --no-init'
 # Local bin
 [[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
 
+# Snap bin — zsh never sources /etc/profile.d/apps-bin-path.sh (that's a bash
+# login-shell thing), so snap-installed tools (e.g. glow) are invisible without this.
+[[ -d /snap/bin ]] && export PATH="$PATH:/snap/bin"
+
 # =============================================================================
 # Aliases
 # =============================================================================
@@ -184,6 +188,23 @@ alias ....='cd ../../..'
 alias rm='rm -i'
 alias cp='cp -i'
 alias mv='mv -i'
+
+# Quality of life
+alias c='clear'
+alias h='history'
+alias mkd='mkdir -p'
+alias df='df -h'
+alias du='du -h'
+alias path='echo -e ${PATH//:/\\n}'
+alias reload='source ~/.zshrc'
+
+# Pretty print
+if command -v bat &>/dev/null; then
+  alias cat='bat --paging=never'
+elif command -v batcat &>/dev/null; then
+  alias cat='batcat --paging=never'
+fi
+command -v glow &>/dev/null && alias md='glow'
 
 # Git shortcut (aliases live in .gitconfig)
 alias g='git'

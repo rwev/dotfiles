@@ -54,7 +54,52 @@ install_packages() {
 }
 
 # =============================================================================
-# 2. Symlink dotfiles
+# 2. Install pretty-print tools (nice-to-have; failures warn, not fatal)
+# =============================================================================
+install_pretty_print_tools() {
+  local packages=()
+
+  command -v bat &>/dev/null || command -v batcat &>/dev/null || packages+=(bat)
+
+  if [[ ${#packages[@]} -eq 0 ]]; then
+    success "bat already installed"
+  else
+    info "Installing: ${packages[*]}"
+    if command -v apt-get &>/dev/null; then
+      run sudo apt-get install -y "${packages[@]}" || warn "Failed to install ${packages[*]} — install manually if wanted"
+    elif command -v brew &>/dev/null; then
+      run brew install "${packages[@]}"
+    elif command -v dnf &>/dev/null; then
+      run sudo dnf install -y "${packages[@]}" || warn "Failed to install ${packages[*]} — install manually if wanted"
+    elif command -v pacman &>/dev/null; then
+      run sudo pacman -S --noconfirm "${packages[@]}" || warn "Failed to install ${packages[*]} — install manually if wanted"
+    else
+      warn "No supported package manager found — install bat manually if wanted"
+    fi
+  fi
+
+  if command -v glow &>/dev/null; then
+    success "glow already installed"
+    return
+  fi
+
+  info "Installing glow (markdown renderer)"
+  if command -v brew &>/dev/null; then
+    run brew install glow
+  elif command -v pacman &>/dev/null; then
+    run sudo pacman -S --noconfirm glow || warn "Failed to install glow — install manually: https://github.com/charmbracelet/glow"
+  elif command -v dnf &>/dev/null; then
+    run sudo dnf install -y glow || warn "glow not found via dnf — install manually: https://github.com/charmbracelet/glow"
+  elif command -v snap &>/dev/null; then
+    # Not in Debian/Ubuntu's apt archives; Charm ships it via snap instead.
+    run sudo snap install glow || warn "Failed to install glow via snap — install manually: https://github.com/charmbracelet/glow"
+  else
+    warn "glow not available via a supported package manager — install manually: https://github.com/charmbracelet/glow"
+  fi
+}
+
+# =============================================================================
+# 3. Symlink dotfiles
 # =============================================================================
 link_file() {
   local src="$1"
@@ -166,7 +211,7 @@ symlink_opencode() {
 }
 
 # =============================================================================
-# 3. Set zsh as the default shell
+# 4. Set zsh as the default shell
 # =============================================================================
 set_default_shell() {
   local zsh_path
@@ -194,7 +239,7 @@ set_default_shell() {
 }
 
 # =============================================================================
-# 4. Bootstrap antidote (plugin manager)
+# 5. Bootstrap antidote (plugin manager)
 # =============================================================================
 install_antidote() {
   local antidote_dir="${XDG_DATA_HOME:-$HOME/.local/share}/antidote"
@@ -219,6 +264,7 @@ main() {
   echo ""
 
   install_packages
+  install_pretty_print_tools
   symlink_dotfiles
   ensure_zshrc_loader
   symlink_claude
