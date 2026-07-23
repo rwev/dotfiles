@@ -191,6 +191,7 @@ alias mv='mv -i'
 
 # Quality of life
 alias c='clear'
+alias e='exit'
 alias h='history'
 alias mkd='mkdir -p'
 alias df='df -h'
