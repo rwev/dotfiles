@@ -206,6 +206,7 @@ elif command -v batcat &>/dev/null; then
   alias cat='batcat --paging=never'
 fi
 command -v glow &>/dev/null && alias md='glow'
+command -v glow &>/dev/null && alias mda='glow -a'
 
 # Git shortcut (aliases live in .gitconfig)
 alias g='git'
