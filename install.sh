@@ -194,20 +194,19 @@ symlink_claude() {
   merge_json_file "$DOTFILES_DIR/.claude/settings.json" "$HOME/.claude/settings.json" "$HOME/.claude/settings.local.json"
   link_file "$DOTFILES_DIR/.claude/CLAUDE.md"     "$HOME/.claude/CLAUDE.md"
   link_file "$DOTFILES_DIR/.claude/statusline.sh" "$HOME/.claude/statusline.sh"
-  link_file "$DOTFILES_DIR/.claude/commands"      "$HOME/.claude/commands"
+  link_file "$DOTFILES_DIR/.claude/skills"        "$HOME/.claude/skills"
   link_file "$DOTFILES_DIR/.claude/agents"        "$HOME/.claude/agents"
   link_file "$DOTFILES_DIR/.claude/output-styles" "$HOME/.claude/output-styles"
 }
 
 # Symlink OpenCode config, reusing Claude Code's tracked config where the
-# schemas line up (rules file, /my:* commands) and adding OpenCode-native
-# files only where the frontmatter schema genuinely differs (agents).
+# schemas line up (rules file; /my:* skills reach OpenCode for free via its
+# native ~/.claude/skills discovery) and adding OpenCode-native files only
+# where the frontmatter schema genuinely differs (agents).
 symlink_opencode() {
-  run mkdir -p "$HOME/.config/opencode/command"
   link_file "$DOTFILES_DIR/.claude/CLAUDE.md"       "$HOME/.config/opencode/AGENTS.md"
   merge_json_file "$DOTFILES_DIR/.opencode/opencode.json" "$HOME/.config/opencode/opencode.json" "$HOME/.config/opencode/opencode.local.json"
   link_file "$DOTFILES_DIR/.opencode/agents"        "$HOME/.config/opencode/agents"
-  link_file "$DOTFILES_DIR/.claude/commands/my"     "$HOME/.config/opencode/command/my"
 }
 
 # =============================================================================

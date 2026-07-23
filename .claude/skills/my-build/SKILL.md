@@ -1,16 +1,16 @@
 ---
+name: my-build
 description: >-
   Break a task into a reviewed, subagent-executed build loop.
   TRIGGER — invoke whenever the user wants a non-trivial task actually
   implemented end-to-end, not just planned (e.g. "build X", "implement X",
   "add feature X", "let's get this done"). SKIP for read-only planning — use
-  my:scope instead.
-argument-hint: [what you want to build]
+  my-scope instead.
 ---
 
-Task: $ARGUMENTS
+Task: the thing the user just asked to have built.
 
-1. Explore like `/my:scope` does: check the current project state, reference
+1. Explore like `/my-scope` does: check the current project state, reference
    real `file:line`s, note reused patterns and any risks or ambiguities. Ask
    clarifying questions one at a time if the shape of the work isn't obvious.
 2. Break the result into right-sized tasks — each a small, independently
@@ -40,5 +40,5 @@ Task: $ARGUMENTS
    every task is done or you hit something genuinely blocked.
 7. When all tasks are done, dispatch `_my-reviewer` once more against the
    full range (first task's base SHA to current `HEAD`) as one broad pass
-   over the whole branch. Then point me at `/my:pr` to open the PR — don't
+   over the whole branch. Then point me at `/my-pr` to open the PR — don't
    do that part yourself.

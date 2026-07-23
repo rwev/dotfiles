@@ -1,4 +1,5 @@
 ---
+name: my-tidy
 description: >-
   Clean up the current diff without changing behavior.
   TRIGGER — invoke whenever the user wants the current diff cleaned up or

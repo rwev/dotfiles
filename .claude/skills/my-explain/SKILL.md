@@ -1,14 +1,14 @@
 ---
+name: my-explain
 description: >-
   Explain a file, symbol, or concept at a high level.
   TRIGGER — invoke whenever the user asks what something is or does, or how it
   works (e.g. "what does X do", "explain this function", "how does X work",
   "walk me through this file"). SKIP when the question is specifically about a
-  third-party package/library — use my:deps instead.
-argument-hint: [file, symbol, or topic]
+  third-party package/library — use my-deps instead.
 ---
 
-Explain: $ARGUMENTS
+Explain the file, symbol, or concept the user named.
 
 Give a high-level explanation aimed at someone new to this code:
 

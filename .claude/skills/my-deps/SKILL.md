@@ -1,13 +1,13 @@
 ---
+name: my-deps
 description: >-
   Explain a dependency — why it's here and what uses it.
   TRIGGER — invoke whenever the user asks about a specific third-party
   package/library: why it's there, what uses it, or whether it's needed (e.g.
   "why do we have X", "what uses this package", "can we remove X").
-argument-hint: [dependency name]
 ---
 
-Investigate the dependency: $ARGUMENTS
+Investigate the dependency the user named.
 
 1. Confirm where it's declared (manifest/lockfile) and what version/range.
 2. Find where it's actually used in the codebase (imports/usages), with `file:line` refs.

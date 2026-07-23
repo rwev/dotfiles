@@ -1,4 +1,5 @@
 ---
+name: my-commit
 description: >-
   Stage changes and write a concise conventional-commit message.
   TRIGGER — invoke whenever the user asks to commit, save, or check in changes,
