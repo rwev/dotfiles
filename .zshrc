@@ -173,6 +173,11 @@ export LESS='-R --quit-if-one-screen --no-init'
 # login-shell thing), so snap-installed tools (e.g. glow) are invisible without this.
 [[ -d /snap/bin ]] && export PATH="$PATH:/snap/bin"
 
+# nvm — node version manager
+export NVM_DIR="$HOME/.nvm"
+[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+[[ -s "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion"
+
 # =============================================================================
 # Aliases
 # =============================================================================
