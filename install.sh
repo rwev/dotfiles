@@ -148,7 +148,13 @@ merge_json_file() {
   fi
 
   [[ -e "$local_override" ]] || run bash -c "echo '{}' > '$local_override'"
-  jq empty "$local_override" 2>/dev/null || run bash -c "echo '{}' > '$local_override'"
+
+  if ! jq empty "$local_override" 2>/dev/null; then
+    local invalid_backup="${local_override%.json}.invalid.json"
+    warn "$local_override is not valid JSON — preserving as $invalid_backup before resetting to {}"
+    run cp "$local_override" "$invalid_backup"
+    run bash -c "echo '{}' > '$local_override'"
+  fi
 
   info "Merging $dotfiles_src + $local_override → $dest"
   run bash -c "jq -s '.[0] * .[1]' '$dotfiles_src' '$local_override' > '$dest.tmp' && mv '$dest.tmp' '$dest'"
