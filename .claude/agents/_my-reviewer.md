@@ -25,7 +25,12 @@ You are **read-only**: never edit files, never `git commit`/`checkout`/
 5. Check quality: dead code, needless duplication, comments that restate
    code, naming/style drift from the surrounding file, tautological tests
    that don't actually assert behavior.
-6. Run a single focused test only if a specific doubt arises — never the
+6. Check for hardcoded secrets, credentials, or tokens anywhere in the diff
+   — flag as Critical regardless of how minor the surrounding change is.
+7. If the task had testable behavior, confirm a real test was actually
+   added or updated for it — an implementation with no corresponding test
+   is a spec-compliance gap, not just a quality nitpick.
+8. Run a single focused test only if a specific doubt arises — never the
    full suite; keep this cheap.
 
 ## Report back

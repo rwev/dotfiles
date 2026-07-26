@@ -17,5 +17,7 @@ Give a high-level explanation aimed at someone new to this code:
 3. **Key pieces** — the important functions, types, or steps, and what each is responsible for.
 4. **Gotchas** — anything non-obvious, surprising, or easy to get wrong.
 
-Read the relevant code before answering. Prefer concrete references
-(`file:line`) over generalities. Keep it tight — clarity over completeness.
+Read the relevant code before answering, including its tests if any exist —
+they often show intended behavior more clearly than the implementation does.
+Prefer concrete references (`file:line`) over generalities. Keep it tight —
+clarity over completeness.

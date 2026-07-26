@@ -9,11 +9,14 @@ description: >-
 
 Investigate the dependency the user named.
 
-1. Confirm where it's declared (manifest/lockfile) and what version/range.
+1. Confirm where it's declared (manifest/lockfile) and what version/range. In a
+   monorepo/workspace, check which package actually declares it — don't assume
+   it's the root's.
 2. Find where it's actually used in the codebase (imports/usages), with `file:line` refs.
 3. Explain what it provides and why the project needs it.
 4. Assess: is it a direct dependency or transitive? Actively used or dead weight? Is
    there a lighter/std-library alternative, or would removing it break something?
+   Note if the installed version has known security advisories against it.
 
 Be factual and cite real usages. If it looks unused or replaceable, say so, but don't
 remove or change anything unless I ask.

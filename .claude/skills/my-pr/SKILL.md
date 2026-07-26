@@ -10,11 +10,15 @@ description: >-
 Prepare a pull request for the current branch.
 
 1. Determine the base branch (use one the user named, else the repo's default) and
-   review the full diff against it (`git diff <base>...HEAD`, `git log`).
+   review the full diff against it (`git diff <base>...HEAD`, `git log`). Check
+   whether the base has moved since the branch diverged; flag likely conflicts
+   rather than opening a PR that won't merge cleanly. If there's no remote or
+   `gh` isn't authenticated, say so rather than failing partway through.
 2. Draft a PR title (concise, imperative) and a body: a short "what & why" summary,
    notable changes as bullets, and any testing notes or follow-ups.
 3. Show me the title and body first. Only after I confirm, push the branch if needed
    and open the PR with `gh pr create`.
 
-Never push or open the PR without my explicit confirmation. Don't include secrets or
-internal-only notes in the PR body.
+Never push or open the PR without my explicit confirmation, and never force-push to
+update it without asking first — even for a branch only this PR uses. Don't include
+secrets or internal-only notes in the PR body.

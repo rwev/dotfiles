@@ -1,22 +1,25 @@
 ---
 name: my-plan
 description: >-
-  Deep-scope a task: surface every open decision, ask them explicitly, and
-  flag consequential risks before any plan is finalized.
-  TRIGGER — invoke when the user wants a task thoroughly scoped before
-  committing to an approach (e.g. "plan this out in depth", "scope all the
-  decisions here", "what do we need to decide before starting X"). SKIP for
-  light/quick planning — use my-scope instead. SKIP when they want it built
-  — use my-build.
+  Scope a task before any code is written: explore how it currently works,
+  surface every open decision — including ones never raised — ask them, and
+  flag consequential risks.
+  TRIGGER — invoke whenever the user wants a task explored, scoped, or
+  planned before code is written (e.g. "how would we approach X", "plan this
+  out", "what would it take to do X", "scope this change", "plan this out in
+  depth", "what do we need to decide before starting X"). SKIP when they want
+  it built — use my-build instead.
 ---
 
 Task: the thing the user just asked about.
 
 Do NOT edit files or write code — this is scoping only.
 
-1. Explore the relevant code and understand how it currently works. Reference
-   real `file:line` locations, note existing patterns/utilities that should
-   be reused.
+1. Dispatch a subagent (fork yourself, or the Explore agent type with full
+   task context — it starts cold) to investigate the codebase and report
+   back how it currently works: real `file:line` locations, existing
+   patterns/utilities to reuse. Keep the raw search/read noise out of your
+   own context; work from its distilled report for the rest of this process.
 2. Enumerate every open decision the task leaves unresolved — including ones
    the master never raised or hinted at. Don't limit yourself to what was
    asked; actively hunt across each category:
@@ -48,7 +51,9 @@ Do NOT edit files or write code — this is scoping only.
 5. Ask all of them via `AskUserQuestion`, batched (max 4 per call, your
    recommendation listed first). Anything that doesn't fit multiple choice,
    ask directly as plain text in the same pass. Wait for answers before
-   proceeding — don't assume.
+   proceeding — don't assume. If an answer reveals a new decision that also
+   clears the bar in step 3, ask that one too — don't treat the first batch
+   as final just because it was first.
 6. Separately, call out risks and consequences that don't need a decision but
    the master should know about before work starts (perf cliffs, migration
    pain, security exposure, things likely to surprise them later).

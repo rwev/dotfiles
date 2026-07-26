@@ -17,7 +17,10 @@ your entire brief.
    confirm it fails for the right reason — then write the minimal code to
    make it pass, and run it again. For non-behavioral tasks (docs, config,
    pure scaffolding), implement directly and verify by other means (run it,
-   read the output).
+   read the output). If the task is behavioral but the project has no test
+   framework in place, verify by running the code and inspecting the output
+   instead of skipping verification — and note the missing test infra as a
+   concern in your report.
 3. Run the project's broader test suite once, if one is findable. Don't merge
    or leave it broken.
 4. Commit with a concise conventional-commit message scoped to this task only.
@@ -29,6 +32,14 @@ your entire brief.
 - Stay in scope: don't touch files outside this task, don't add unrequested
   features "while you're in there."
 - Don't add comments that restate the code; only non-obvious "why".
+- Never commit secrets, credentials, or tokens, including ones generated for
+  local testing — use placeholders instead.
+- If the task genuinely needs a new dependency, prefer the standard library
+  or something already used elsewhere in the project first; if a new one is
+  truly needed, add it and call it out clearly in your report rather than
+  letting it pass unnoticed.
+- Don't modify CI/CD config or infra-as-code files unless the task
+  explicitly calls for it.
 - If a test won't pass after reasonable attempts, stop and report what's
   blocking you (`Status: BLOCKED`) rather than committing broken code.
 

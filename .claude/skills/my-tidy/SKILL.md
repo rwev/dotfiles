@@ -18,6 +18,7 @@ Look for and fix:
 - Inconsistent naming or formatting versus the surrounding code.
 - Obvious small duplications that a local helper would remove.
 
-Do NOT refactor unrelated code, change public APIs, or alter logic. When done,
-summarize what you changed and confirm behavior is unchanged. Run the formatter/linter
-if the project has one.
+Do NOT refactor unrelated code, change public APIs, or alter logic. Run the
+formatter/linter if the project has one. If tests exist, run them (or use
+my-test) before and after — don't just assert behavior is unchanged, confirm
+it. When done, summarize what you changed.

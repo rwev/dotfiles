@@ -13,7 +13,9 @@ Review the current working-tree changes and create a git commit.
 
 1. Run `git status` and `git diff` (and `git diff --staged`) to see what changed.
 2. If nothing is staged, stage the relevant changes with `git add`. Don't stage
-   unrelated files, build artifacts, or secrets.
+   unrelated files, build artifacts, or secrets — scan the diff for anything
+   that looks like a credential, key, or token before staging it, and flag
+   rather than commit it if you find one.
 3. Write a concise message in conventional-commit form: `type(scope): summary`
    (types: feat, fix, refactor, docs, test, chore, perf, build, ci). Keep the
    summary under ~72 chars, imperative mood. Add a short body only if the "why"
@@ -21,4 +23,6 @@ Review the current working-tree changes and create a git commit.
 4. Show me the message and the staged file list, then commit.
 
 Do not push. If the changes span multiple unrelated concerns, suggest splitting
-them into separate commits instead of one.
+them into separate commits instead of one. If a pre-commit hook fails, fix the
+underlying issue and commit again — don't bypass it with `--no-verify` and
+don't amend a prior commit to paper over it, unless I explicitly ask for either.

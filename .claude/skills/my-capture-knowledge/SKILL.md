@@ -20,7 +20,9 @@ well-organized markdown file in the current directory (`./`), not a subdirectory
    append a dated section or overwrite — don't silently clobber it.
 2. Review the full conversation and pull out only what has lasting value —
    skip tool-call noise, dead ends abandoned without a reason, and anything
-   the user can already see by reading the code or git history.
+   the user can already see by reading the code or git history. Never copy
+   secrets, credentials, or tokens into the file, even if they appeared
+   verbatim in logs or output during the session.
 3. Write the file with whatever subset of these sections actually has content
    — omit any section with nothing to say, don't pad:
    - **Title** — one line, the topic.

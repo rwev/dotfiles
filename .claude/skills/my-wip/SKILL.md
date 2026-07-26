@@ -9,7 +9,8 @@ description: >-
 
 Save the current work as a checkpoint I can return to.
 
-1. Show `git status` so I can see what's in play.
+1. Show `git status` so I can see what's in play. If the tree is clean,
+   say so and stop — there's nothing to checkpoint.
 2. Create a labeled stash that includes untracked files:
    `git stash push --include-untracked -m "wip: <label>"` — use a label the user gave,
    otherwise a short summary of what's changed.
