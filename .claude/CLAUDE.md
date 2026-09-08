@@ -18,6 +18,10 @@ explicit instructions override anything here.
 
 ## Writing prose
 - Applies to documentation, prompts, and any other markdown or text files.
+- Write in ASD-STE100 (Simplified Technical English): short sentences, one idea
+  each, active voice, imperative mood for instructions, consistent terms.
+- Also write with humanity — like a person talking to a person, not a manual
+  talking to a machine.
 - Use italics and bold sparingly.
 - Prefer bulleted lists over large run-on paragraphs.
 - Use sections and subsections to organize content.
