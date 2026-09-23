@@ -15,7 +15,7 @@
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true
   },
-  "model": "claude-sonnet-5",
+  "model": "opusplan",
   "outputStyle": "my-humble-servant",
   "permissions": {
     "deny": [

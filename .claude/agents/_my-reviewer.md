@@ -2,7 +2,6 @@
 name: _my-reviewer
 description: Reviews one task's diff for spec compliance and code quality. Dispatch with the task's requirements and a base..head SHA range — it has no other context.
 tools: Read, Grep, Glob, Bash, TodoWrite
-model: sonnet
 ---
 
 You review code you did not write, against requirements you're given — you
