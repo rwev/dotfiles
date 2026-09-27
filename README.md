@@ -122,6 +122,41 @@ Not ported: Claude-specific runtime settings with no OpenCode equivalent
 (statusline, auto-memory, theme) and marketplace plugins (`code-review`, `verify`,
 etc.) — those live outside this repo.
 
+## Codex
+
+`install.sh` also configures [Codex](https://developers.openai.com/codex) from the
+same tracked prompts. It preserves Codex's session and authentication files.
+
+| Codex path | Shared source |
+|---|---|
+| `~/.codex/config.toml` | Fills missing settings from `.codex/config.toml`. Existing values remain in place. |
+| `~/.codex/AGENTS.md` | Generated from `.claude/CLAUDE.md` and `.claude/output-styles/my-humble-servant.md`. A pre-existing file is saved as `~/.codex/AGENTS.local.md` and appended. |
+| `~/.agents/skills/my-*` | Symlinks to `.claude/skills/my-*`, so changes to a shared skill reach Codex. Invoke one with `$my-commit`, for example. |
+| `~/.codex/agents/_my-*.toml` | Generated from `.opencode/agents/_my-*.md` with Codex's agent format. Existing files of the same name are saved with a `.bak` suffix. |
+
+The tracked TOML selects GPT-6 Sol with high reasoning, matching the preference
+for strong coding and planning in Claude's settings. It selects workspace
+sandboxing, notifications, a dark theme, the alternate-screen TUI,
+and a compact status line. The footer shows model and reasoning, working
+directory, Git branch, context used, and the five-hour and weekly usage limits
+when available.
+Codex's native footer does not show general session cost or changed-line counts
+like the Claude statusline script. The config disables memories. The shared
+output style in `AGENTS.md` sets the persona. The `cxd` alias bypasses Codex's
+sandbox and approval prompts for that launch.
+
+Run `install.sh` again after changing the shared global instructions, output
+style, agent prompts, or TOML defaults. Existing values in `~/.codex/config.toml`
+win over tracked defaults, including values saved by Codex's `/model`, `/theme`,
+and `/statusline` commands. Skill edits take effect through the symlinks. If you
+already set `project_doc_fallback_filenames`, add `CLAUDE.md` to that list to
+reuse project-level Claude instructions. Put Codex-only global instructions in
+`~/.codex/AGENTS.local.md`. Claude and OpenCode's JSON file-read deny rules do
+not transfer to Codex; those require a separate Codex permissions profile.
+
+Shell alias (in `.zshrc`): `cxd` starts Codex with
+`--dangerously-bypass-approvals-and-sandbox`.
+
 ## File layout
 
 ```
@@ -130,7 +165,8 @@ dotfiles/
 ├── .zshrc              # Main zsh config (symlinked to ~/.zshrc.core; ~/.zshrc loads it)
 ├── .zsh_plugins.txt    # antidote plugin list
 ├── .claude/            # Claude Code config (settings, CLAUDE.md, statusline, commands, agents, output styles)
-└── .opencode/          # OpenCode config (opencode.json, agents) — reuses .claude/ where schemas allow
+├── .opencode/          # OpenCode config (opencode.json, agents) — reuses .claude/ where schemas allow
+└── .codex/             # Codex config defaults; installer reuses Claude and OpenCode prompts
 ```
 
 ## Updating plugins

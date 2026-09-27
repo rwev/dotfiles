@@ -221,3 +221,6 @@ alias g='git'
 alias cld='claude --dangerously-skip-permissions'
 alias cldc='claude --continue --dangerously-skip-permissions'   # continue most recent session
 alias cldr='claude --resume --dangerously-skip-permissions'     # pick a session to resume
+
+# Codex — skip approval prompts and sandboxing.
+alias cxd='codex --dangerously-bypass-approvals-and-sandbox'
