@@ -37,5 +37,5 @@ offer it.
 
 Report: root cause (`file:line` + mechanism), the evidence that confirms it,
 and a described (not applied) fix recommendation. Diagnose only — leave
-applying the fix to me, or to `/my-build` for anything non-trivial, unless
+applying the fix to me, or to `my-build` for anything non-trivial, unless
 I've explicitly asked you to fix it yourself.

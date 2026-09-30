@@ -62,111 +62,229 @@ universally append PATH exports and init lines to `~/.zshrc` by convention —
 since it's untracked, that churn never touches the repo. Anything you want to
 add by hand (tokens, work-specific paths) goes there too.
 
-## Claude Code
+## AI agent configuration
 
-Global [Claude Code](https://claude.com/claude-code) config is version-controlled here
-and symlinked into `~/.claude/` by `install.sh`. Only portable config is tracked — the
-runtime state in `~/.claude/` (sessions, cache, `~/.claude.json` OAuth tokens,
-auto-memory, plugin mirror) is intentionally left untracked.
+Shared content lives in `.agents/`. Thin adapters install it in each CLI's native
+format. The installer does not install AI tools or manage credentials, sessions,
+caches, or other runtime state. It does not link whole harness directories.
 
-| File | What it does |
-|---|---|
-| `.claude/settings.json` | Model, theme, cleanup window, secret-file deny rules, auto-memory, statusline wiring |
-| `.claude/CLAUDE.md` | Universal rules — **loaded into every session on the machine**, so kept lean |
-| `.claude/statusline.sh` | Footer showing model · dir · git branch · session cost · lines changed |
-| `.claude/commands/my/` | Custom slash commands, namespaced `/my:*` so it's clear they come from here — drop in a `.md` file to add more |
-| `.claude/agents/` | Custom subagents, namespaced `_my-*` (underscore = dispatched by a command, not invoked directly) — drop a `_my-*.md` file here to add more |
-| `.claude/output-styles/` | The `my-humble-servant` output style (set as the default in `settings.json`) |
+### What is portable
 
-Commands: `/my:commit`, `/my:explain`, `/my:scope`, `/my:tidy`, `/my:test`,
-`/my:pr`, `/my:wip`, `/my:deps`, `/my:build`.
+No global directory is read by every AI CLI. Project-root `AGENTS.md` is a shared
+working-instruction convention. Our `~/.agents/AGENTS.md` is a canonical source,
+not a universally discovered global instruction file.
 
-Agents: `_my-implementer`, `_my-reviewer`, `_my-debugger` — a slim,
-subagent-driven-development loop inspired by the `superpowers` plugin.
-`/my:build <task>` explores, proposes a task breakdown, and on approval
-dispatches `_my-implementer`/`_my-reviewer` per task (TDD, fresh-eyes review,
-fix-and-re-review). `_my-debugger` root-causes bugs standalone, isolated from
-the main thread.
+Skills use the standard `SKILL.md` format: YAML metadata followed by Markdown.
+The specification defines the format, not one mandatory installation path.
+The integration guide recommends `.agents/skills` for shared discovery.
+See the [Agent Skills specification](https://agentskills.io/specification) and
+[integration guide](https://agentskills.io/client-implementation/adding-skills-support).
 
-Shell aliases (in `.zshrc`): `cld` = `claude --dangerously-skip-permissions`,
-`cldc` = continue last session, `cldr` = pick a session to resume.
+| CLI           | Global instruction destination               | Shared skill discovery                                                                                                 |
+| ------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Claude Code   | `~/.claude/CLAUDE.md`                        | Installer links skills into `~/.claude/skills`. [Docs](https://code.claude.com/docs/en/skills).                        |
+| Codex         | `~/.codex/AGENTS.md`                         | Reads `~/.agents/skills`. [Docs](https://learn.chatgpt.com/docs/build-skills).                                         |
+| OpenCode      | `~/.config/opencode/AGENTS.md`               | Reads `~/.agents/skills`. [Docs](https://opencode.ai/docs/skills/).                                                    |
+| Copilot CLI   | `~/.copilot/copilot-instructions.md`         | Reads `~/.agents/skills`. [Docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills). |
+| Gemini CLI    | `~/.gemini/GEMINI.md`                        | Reads `~/.agents/skills`. [Docs](https://geminicli.com/docs/cli/skills/).                                              |
+| Amp           | `~/.config/amp/AGENTS.md`                    | Reads `~/.agents/skills`. [Docs](https://ampcode.com/docs/customize/skills).                                           |
 
-### Machine-local overrides
+Native instruction loading differs. See [Claude memory](https://code.claude.com/docs/en/memory),
+[Codex AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md),
+[OpenCode rules](https://opencode.ai/docs/rules/),
+[Copilot instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions),
+[Gemini context](https://geminicli.com/docs/cli/gemini-md/), and
+[Amp instructions](https://ampcode.com/docs/customize/agents-md).
 
-`~/.claude/settings.json` isn't a symlink — Claude Code's own `settings.local.json`
-layering only applies inside a project's `.claude/`, there's no global equivalent, so
-`install.sh` does the merging itself. On first run, any real pre-existing
-`~/.claude/settings.json` is captured verbatim into `~/.claude/settings.local.json`;
-every run after, `install.sh` regenerates `settings.json` as `.claude/settings.json`
-(tracked) deep-merged with `settings.local.json` (local), with local winning any
-conflicting key — same idea as `~/.zshrc` sourcing `.zshrc.core`, just merged at
-install time instead of sourced at shell-start. `settings.local.json` lives outside
-this repo and is hand-editable any time; edits take effect on the next `install.sh`
-run. To try a different output style on one machine, set `"outputStyle"` there or
-just run `/output-style` in a session.
+Personas and specialist roles have no common discovery format. Their prompt
+bodies are shared; the installer generates native files. Portable content does
+not imply equal capabilities or permission enforcement.
 
-## OpenCode
+### Install or update agents only
 
-[OpenCode](https://opencode.ai) config is version-controlled here too and wired
-into `~/.config/opencode/` by `install.sh`, reusing the Claude Code config above
-rather than duplicating it:
+Require Bash and jq. Run from this checkout:
 
-| Link | What it reuses |
-|---|---|
-| `~/.config/opencode/AGENTS.md` → `.claude/CLAUDE.md` | Same global working-style/safety rules |
-| `~/.config/opencode/command/my` → `.claude/commands/my` | Same `/my:*` commands — the frontmatter/`$ARGUMENTS` syntax is compatible as-is |
-| `~/.config/opencode/agents` → `.opencode/agents/` | Native OpenCode versions of `_my-implementer`/`_my-debugger`/`_my-reviewer`, same prose, translated to OpenCode's `mode`/`permission` schema (Claude's `tools:` list has no OpenCode equivalent) |
-| `~/.config/opencode/opencode.json` | Generated from `.opencode/opencode.json` merged with `~/.config/opencode/opencode.local.json` — same merge mechanism as `settings.json` above, not a symlink. Folds in the `my-humble-servant` output style via `instructions` and mirrors the secret-file read denies from `.claude/settings.json` |
+```bash
+# Install shared content and the four default adapters.
+bash install.sh --agents-only
 
-Not ported: Claude-specific runtime settings with no OpenCode equivalent
-(statusline, auto-memory, theme) and marketplace plugins (`code-review`, `verify`,
-etc.) — those live outside this repo.
+# Preview without changing files.
+bash install.sh --agents-only --dry-run
 
-## Codex
+# Install shared content only, for explicit loading.
+bash install.sh --agents-only --tools=universal
 
-`install.sh` also configures [Codex](https://developers.openai.com/codex) from the
-same tracked prompts. It preserves Codex's session and authentication files.
+# Install optional adapters and shared content.
+bash install.sh --agents-only --tools=gemini,amp
 
-| Codex path | Shared source |
-|---|---|
-| `~/.codex/config.toml` | Fills missing settings from `.codex/config.toml`. Existing values remain in place. |
-| `~/.codex/AGENTS.md` | Generated from `.claude/CLAUDE.md` and `.claude/output-styles/my-humble-servant.md`. A pre-existing file is saved as `~/.codex/AGENTS.local.md` and appended. |
-| `~/.agents/skills/my-*` | Symlinks to `.claude/skills/my-*`, so changes to a shared skill reach Codex. Invoke one with `$my-commit`, for example. |
-| `~/.codex/agents/_my-*.toml` | Generated from `.opencode/agents/_my-*.md` with Codex's agent format. Existing files of the same name are saved with a `.bak` suffix. |
+# Install all six adapters.
+bash install.sh --agents-only --tools=claude,codex,opencode,copilot,gemini,amp
+```
 
-The tracked TOML selects GPT-6 Sol with high reasoning, matching the preference
-for strong coding and planning in Claude's settings. It selects workspace
-sandboxing, notifications, a dark theme, the alternate-screen TUI,
-and a compact status line. The footer shows model and reasoning, working
-directory, Git branch, context used, and the five-hour and weekly usage limits
-when available.
-Codex's native footer does not show general session cost or changed-line counts
-like the Claude statusline script. The config disables memories. The shared
-output style in `AGENTS.md` sets the persona. The `cxd` alias bypasses Codex's
-sandbox and approval prompts for that launch.
+`--agents-only` skips packages, shell changes, and unrelated dotfiles.
+`--tools` also selects adapters during the normal full bootstrap. Omit it to
+select Claude, Codex, OpenCode, and Copilot. Every selection installs the shared
+layer. Use `universal` alone. No common launch wrapper is installed.
 
-Run `install.sh` again after changing the shared global instructions, output
-style, agent prompts, or TOML defaults. Existing values in `~/.codex/config.toml`
-win over tracked defaults, including values saved by Codex's `/model`, `/theme`,
-and `/statusline` commands. Skill edits take effect through the symlinks. If you
-already set `project_doc_fallback_filenames`, add `CLAUDE.md` to that list to
-reuse project-level Claude instructions. Put Codex-only global instructions in
-`~/.codex/AGENTS.local.md`. Claude and OpenCode's JSON file-read deny rules do
-not transfer to Codex; those require a separate Codex permissions profile.
+The installer honors `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, and `COPILOT_HOME`.
+OpenCode and Amp use `XDG_CONFIG_HOME`. `GEMINI_CLI_HOME` replaces Gemini's home
+root: its config destination is `$GEMINI_CLI_HOME/.gemini`, not the variable
+itself. A custom Gemini home also receives individual native skill links.
 
-Shell alias (in `.zshrc`): `cxd` starts Codex with
+### Sources and defaults
+
+| Source                                      | Purpose                                                      |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| `.agents/AGENTS.md`                         | Concise working rules, safety defaults, and verification.    |
+| `.agents/skills/my-*/SKILL.md`              | Twelve portable workflows.                                   |
+| `.agents/personas/my-humble-servant.md`     | Plain Markdown persona body.                                 |
+| `.agents/agents/_my-*.md`                   | Three shared specialist instruction bodies.                  |
+| `.claude/templates/`                        | Native role and output-style metadata, outside discovery.    |
+| `.opencode/templates/agents/`               | Native role metadata, outside discovery.                     |
+| `.copilot/agents/`                          | Native Copilot role metadata.                                |
+| `.claude/settings.json`                     | Existing Claude runtime defaults and statusline wiring.      |
+| `.opencode/opencode.json`                   | Existing permissions and neutral persona instruction path.   |
+| `.codex/config.toml`                        | Existing Codex runtime defaults.                             |
+
+Rules keep changes small, reuse existing code, require verification, and report
+failures honestly. Explicit user instructions override these personal defaults.
+
+The default persona is `my-humble-servant`. Each adapter supplies it once:
+
+- Claude uses a generated native output style; global instructions contain rules only.
+- OpenCode loads the neutral persona through its `instructions` setting.
+- Codex, Copilot, Gemini, and Amp receive rules plus the persona in global instructions.
+
+Existing model, reasoning, permission, memory, plugin, and UI defaults stay in
+place. Copilot, Gemini, and Amp keep vendor runtime defaults. The installer adds
+no authentication or model configuration for them.
+
+### Skills and specialist roles
+
+| Skill                    | Purpose                                          |
+| ------------------------ | ------------------------------------------------ |
+| `my-build`               | Implement tasks with subagents and review.       |
+| `my-capture-knowledge`   | Save session findings in project Markdown.       |
+| `my-commit`              | Stage and commit with a concise message.         |
+| `my-debug`               | Diagnose a failure without applying a fix.       |
+| `my-deps`                | Explain a dependency and its uses.               |
+| `my-explain`             | Explain code or a concept.                       |
+| `my-plan`                | Explore and scope work before coding.            |
+| `my-pr`                  | Prepare and open a pull request with approval.   |
+| `my-security`            | Audit code with an independent reviewer.         |
+| `my-test`                | Find and run the project's tests.                |
+| `my-tidy`                | Clean the current diff without behavior changes. |
+| `my-wip`                 | Save work in a labeled stash.                    |
+
+Use native invocation syntax: `/my-commit` in Claude, `$my-commit` in Codex,
+or ask the CLI to use the named skill. Syntax depends on the harness.
+
+The four default adapters install `_my-implementer`, `_my-reviewer`, and
+`_my-security-reviewer`. Reviewer profiles omit native edit tools or restrict
+edit permissions. Claude, OpenCode, and Copilot reviewers still have shell
+access; those settings and prompts are not enforced filesystem isolation.
+Codex reviewer profiles request a native read-only sandbox. Parent runtime
+settings can affect the effective sandbox.
+
+`my-plan`, `my-build`, and `my-security` check required capabilities before work.
+They stop as unsupported when their required subagents or roles are absent.
+They do not replace independent review with self-review or sequential execution.
+Gemini and Amp adapters supply no specialist roles. `my-plan` needs actual
+independent exploration subagents even on those tools.
+
+### Local overrides and migration
+
+Generated files are installed individually. Shared skills, rules, persona, and
+role sources are linked into `~/.agents`. Skill edits reach native discovery
+through live links. Rerun the installer after rule, persona, role, template, or
+runtime-default changes to regenerate native outputs and the manual export.
+
+Claude and OpenCode JSON settings are deep-merged with machine-local files.
+Local keys win; local arrays replace default arrays. Existing real settings
+are captured on first installation. Edit `~/.claude/settings.local.json` or
+`~/.config/opencode/opencode.local.json`, then rerun the installer.
+Codex fills only missing TOML defaults. Existing values remain in place.
+
+Global instruction overrides are appended from these machine-local files:
+
+| CLI           | Local instruction file                                    |
+| ------------- | --------------------------------------------------------- |
+| Claude Code   | `~/.claude/CLAUDE.local.md`                               |
+| Codex         | `~/.codex/AGENTS.local.md`                                |
+| OpenCode      | `~/.config/opencode/AGENTS.local.md`                      |
+| Copilot CLI   | `~/.copilot/copilot-instructions.local.md`                |
+| Gemini CLI    | `~/.gemini/GEMINI.local.md`                               |
+| Amp           | `~/.config/amp/AGENTS.local.md`                           |
+
+These paths follow custom native homes when set. Pre-existing unmanaged global
+instructions are saved and imported into the local instruction file.
+
+Migration replaces known legacy directory links with real directories while
+preserving unrelated runtime entries. Unknown directory symlinks are rejected;
+the installer does not write through them. Conflicts use `.bak`, then `.bak.1`,
+`.bak.2`, and so on. Skill backups live in
+`~/.agents/backups/skills/<skill>.bak[.N]`, outside skill-discovery paths.
+Unrelated skills and runtime files remain untouched.
+
+Existing shell aliases are unchanged: `cld` runs
+`claude --dangerously-skip-permissions`; `cldc` continues a session; `cldr`
+selects one to resume. `cxd` runs Codex with
 `--dangerously-bypass-approvals-and-sandbox`.
+
+### Manual loading for other tools
+
+`~/.agents/exports/default.md` contains rules, the persona, and a skill index
+with capability requirements. Attach it using the tool's explicit read-file or
+prompt-file option. For example, [Aider supports `--read`](https://aider.chat/docs/usage/conventions.html):
+
+```bash
+aider --read "$HOME/.agents/exports/default.md"
+```
+
+Load a full `~/.agents/skills/<name>/SKILL.md` separately when needed.
+This fallback does not add native skill discovery, subagents, or permissions.
+
+### Verification
+
+Run the isolated installer suite with Python 3.11 or newer. Python is a test
+requirement only; installation uses Bash and jq.
+
+```bash
+bash -n install.sh
+python3 -m unittest discover -s tests -v
+```
+
+The suite covers clean installs, repeat runs, target selection, custom homes,
+dry runs, local overrides, migration, backups, invalid JSON, and untouched
+runtime files. It also checks generated profiles and skill metadata.
+
+Check native discovery after installation:
+
+- Claude: inspect `/memory`, `/context`, and available skills.
+- Codex: inspect loaded instructions and `/skills`.
+- Copilot: inspect `/instructions`, `copilot skill list`, and custom agents.
+- Gemini: inspect `/memory show` and skill discovery.
+- Amp: inspect instruction sources and skill listings.
+
+Implementation validation passed the 17 isolated tests. Codex's debug prompt
+input showed the rules, one persona, and all twelve skills; all three generated
+Codex profiles parsed as TOML. Actual specialist execution and interactive
+Claude discovery remain unverified. OpenCode, Copilot, Gemini, and Amp were not
+installed on the validation machine, so their runtime discovery is unverified.
 
 ## File layout
 
-```
+```text
 dotfiles/
-├── install.sh          # Bootstrap: installs zsh, fzf, antidote; symlinks files
-├── .zshrc              # Main zsh config (symlinked to ~/.zshrc.core; ~/.zshrc loads it)
-├── .zsh_plugins.txt    # antidote plugin list
-├── .claude/            # Claude Code config (settings, CLAUDE.md, statusline, commands, agents, output styles)
-├── .opencode/          # OpenCode config (opencode.json, agents) — reuses .claude/ where schemas allow
-└── .codex/             # Codex config defaults; installer reuses Claude and OpenCode prompts
+├── install.sh          # Shell bootstrap and per-tool agent adapters
+├── .zshrc              # ~/.zshrc.core; local ~/.zshrc loads it
+├── .zsh_plugins.txt    # Antidote plugin list
+├── .agents/            # Canonical rules, skills, persona, and specialist bodies
+├── .claude/            # Native settings, statusline, and metadata templates
+├── .opencode/          # Native settings and metadata templates
+├── .codex/             # Native TOML defaults
+├── .copilot/agents/    # Native specialist metadata
+└── tests/              # Isolated installer checks
 ```
 
 ## Updating plugins

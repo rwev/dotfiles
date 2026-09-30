@@ -16,9 +16,9 @@ Run the tests relevant to the current change.
 2. If the user named a specific test or path, focus there and run it directly.
    Otherwise run the tests covering the files changed in the working tree; fall
    back to the full suite if scoping is unclear. A full-suite run can produce a
-   lot of output — fork yourself to run it and return just the distilled
-   pass/fail summary and failure excerpts, keeping the raw run out of your own
-   context.
+   lot of output. Use a native subagent when available to return a distilled
+   pass/fail summary and failure excerpts. Otherwise run it directly and
+   summarize the result in conversation.
 3. Report pass/fail concisely. For failures, show the relevant output and pinpoint the
    likely cause (`file:line`). If a failure looks flaky — unrelated to the change,
    intermittent, timing-dependent — rerun it once before reporting it as real.

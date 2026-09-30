@@ -5,17 +5,23 @@ description: >-
   TRIGGER — invoke whenever the user wants a security review of the current
   diff or a named area (e.g. "security review this", "is this safe to
   ship", "audit this for vulnerabilities", "check this for security
-  issues"). SKIP for general code quality — use my-tidy or /code-review;
+  issues"). SKIP for general code quality — use my-tidy or a code-quality review;
   this is security-specific, not a substitute for either.
+compatibility: Requires native subagents and the _my-security-reviewer role.
 ---
+
+Before auditing, check native subagents and the `_my-security-reviewer`
+role. If either is unavailable, report
+`Unsupported: my-security requires native subagents and its reviewer role`
+and stop. Do not replace delegation with an inline audit or self-review.
 
 Target: the diff or area the user named. Default to the current working-tree
 diff (`git diff` plus staged) if nothing specific was named.
 
 Dispatch the `_my-security-reviewer` agent with that target rather than
-auditing inline. Its tools exclude Edit/Write, so the read-only boundary is
-enforced by its permissions, not just an instruction — nothing it finds can
-accidentally get "fixed" mid-review.
+auditing inline. Require a read-only audit. Native permissions enforce only
+the restrictions that the harness supports. Prompt instructions are not a
+sandbox or a substitute for native permissions.
 
 1. Give it the target (diff range, or the file(s)/feature named) — it has no
    other context, so include anything it needs to know about what changed

@@ -9,14 +9,19 @@ description: >-
   out", "what would it take to do X", "scope this change", "plan this out in
   depth", "what do we need to decide before starting X"). SKIP when they want
   it built — use my-build instead.
+compatibility: Requires native subagent delegation with codebase read access.
 ---
 
 Task: the thing the user just asked about.
 
+Before scoping, check native subagent support. If unavailable, report
+`Unsupported: my-plan requires native subagents` and stop. Do not substitute
+inline exploration for the required subagent.
+
 Do NOT edit files or write code — this is scoping only.
 
-1. Dispatch a subagent (fork yourself, or the Explore agent type with full
-   task context — it starts cold) to investigate the codebase and report
+1. Dispatch a native exploration subagent with the full task context to
+   investigate the codebase and report
    back how it currently works: real `file:line` locations, existing
    patterns/utilities to reuse. Keep the raw search/read noise out of your
    own context; work from its distilled report for the rest of this process.
@@ -48,9 +53,9 @@ Do NOT edit files or write code — this is scoping only.
 4. For each decision that cleared the bar, have a recommended answer ready
    with a one-line reason, plus the realistic alternative(s) and their
    trade-off.
-5. Ask all of them via `AskUserQuestion`, batched (max 4 per call, your
-   recommendation listed first). Anything that doesn't fit multiple choice,
-   ask directly as plain text in the same pass. Wait for answers before
+5. Use the native question tool when available. Batch questions within its
+   limits and list your recommendation first. Otherwise ask in conversation.
+   Ask free-text questions directly when choices do not fit. Wait for answers before
    proceeding — don't assume. If an answer reveals a new decision that also
    clears the bar in step 3, ask that one too — don't treat the first batch
    as final just because it was first.
@@ -60,7 +65,7 @@ Do NOT edit files or write code — this is scoping only.
 7. Once every decision is resolved, write the finalized scope: files that
    would change and what each needs, the decisions made — both the ones
    asked and the ones you made autonomously, with reasons — and an ordered
-   step list ready to hand to `/my-build`.
+   step list ready to hand to `my-build`.
 
 Keep it concrete throughout — no vague hand-waving, no ambiguity left
 unresolved without either an answer or a stated reason it didn't need one.

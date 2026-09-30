@@ -1,16 +1,41 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Dotfiles installer
-# Usage: bash install.sh [--dry-run]
+# Usage: bash install.sh [--dry-run] [--agents-only] [--tools=claude,codex,opencode,copilot]
 # =============================================================================
 set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DRY_RUN=false
+AGENTS_ONLY=false
+PREVIEW_MIGRATIONS=()
+TOOLS=claude,codex,opencode,copilot
 
 for arg in "$@"; do
-  [[ "$arg" == "--dry-run" ]] && DRY_RUN=true
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+    --agents-only) AGENTS_ONLY=true ;;
+    --tools=*) TOOLS="${arg#--tools=}" ;;
+    *) printf 'Unknown argument: %s\n' "$arg" >&2; exit 1 ;;
+  esac
 done
+[[ -n "$TOOLS" && "$TOOLS" != ,* && "$TOOLS" != *, && "$TOOLS" != *,,* ]] || {
+  printf 'Invalid tool list: %s\n' "$TOOLS" >&2; exit 1;
+}
+IFS=, read -r -a SELECTED_TOOLS <<< "$TOOLS"
+for tool in "${SELECTED_TOOLS[@]}"; do
+  case "$tool" in
+    claude|codex|opencode|copilot|gemini|amp) ;;
+    universal) [[ "$TOOLS" == universal ]] || { printf 'universal must be used alone\n' >&2; exit 1; } ;;
+    *) printf 'Unknown tool: %s\n' "$tool" >&2; exit 1 ;;
+  esac
+done
+CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+CODEX_DIR="${CODEX_HOME:-$HOME/.codex}"
+COPILOT_DIR="${COPILOT_HOME:-$HOME/.copilot}"
+OPENCODE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+AMP_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/amp"
+GEMINI_DIR="${GEMINI_CLI_HOME:-$HOME}/.gemini"
 
 info()    { printf '\e[1;34m[info]\e[0m  %s\n' "$*"; }
 success() { printf '\e[1;32m[ok]\e[0m    %s\n' "$*"; }
@@ -101,63 +126,139 @@ install_pretty_print_tools() {
 # =============================================================================
 # 3. Symlink dotfiles
 # =============================================================================
-link_file() {
-  local src="$1"
-  local dest="$2"
-
-  if [[ -e "$dest" && ! -L "$dest" ]]; then
-    warn "Backing up existing $dest → ${dest}.bak"
-    run mv "$dest" "${dest}.bak"
+# Keep backups collision-safe, including dangling links.
+backup_file() {
+  local dest="$1" backup="${1}.bak" backup_base index=1
+  if [[ "$(basename "$(dirname "$dest")")" == skills ]]; then
+    # A backup inside skills is still discoverable. Keep it outside that tree.
+    backup="$HOME/.agents/backups/skills/$(basename "$dest").bak"
+    ensure_directory "$(dirname "$backup")"
   fi
+  backup_base="$backup"
+  while [[ -e "$backup" || -L "$backup" ]]; do
+    backup="${backup_base}.$index"
+    index=$((index + 1))
+  done
+  warn "Preserving $dest → $backup"
+  run mv "$dest" "$backup"
+}
 
+# Only migrate directory links created by this installer. Never write through
+# an unknown directory link, including links in parent directories.
+ensure_directory() {
+  local dest="$1" legacy="${2:-}" entry name migration
+  if [[ -L "$dest" ]]; then
+    if $DRY_RUN; then
+      for migration in "${PREVIEW_MIGRATIONS[@]}"; do
+        [[ "$migration" != "$dest" ]] || return 0
+      done
+    fi
+    if [[ -z "$legacy" || "$(readlink "$dest")" != "$legacy" ]]; then
+      error "Refusing to write through directory symlink: $dest"
+      return 1
+    fi
+    if $DRY_RUN; then
+      info "Migrating managed directory link $dest"
+      PREVIEW_MIGRATIONS+=("$dest")
+      return
+    fi
+    backup_file "$dest"
+    mkdir "$dest"
+    for entry in "$legacy"/* "$legacy"/.[!.]* "$legacy"/..?*; do
+      [[ -e "$entry" || -L "$entry" ]] || continue
+      name="$(basename "$entry")"
+      case "$legacy" in
+        "$DOTFILES_DIR/.claude/skills")
+          [[ -d "$DOTFILES_DIR/.agents/skills/$name" ]] && continue ;;
+        "$DOTFILES_DIR/.claude/agents"|"$DOTFILES_DIR/.opencode/agents")
+          [[ -f "$DOTFILES_DIR/.agents/agents/$name" ]] && continue ;;
+        "$DOTFILES_DIR/.claude/output-styles")
+          [[ "$name" == my-humble-servant.md ]] && continue ;;
+      esac
+      ln -s "$entry" "$dest/$name"
+    done
+    return
+  fi
+  [[ ! -e "$dest" || -d "$dest" ]] || { error "Not a directory: $dest"; return 1; }
+  [[ "$dest" == / || "$dest" == . ]] && return
+  ensure_directory "$(dirname "$dest")"
+  run mkdir -p "$dest"
+}
+
+link_file() {
+  local src="$1" dest="$2"
   if [[ -L "$dest" && "$(readlink "$dest")" == "$src" ]]; then
     success "Already linked: $dest"
     return
   fi
-
+  ensure_directory "$(dirname "$dest")"
+  [[ ! -e "$dest" && ! -L "$dest" ]] || backup_file "$dest"
   info "Linking $dest → $src"
-  run ln -sf "$src" "$dest"
+  run ln -s "$src" "$dest"
 }
 
-# Merge a tracked JSON config with whatever real, machine-local JSON already
-# lives at dest, instead of symlinking over it — same idea as ~/.zshrc
-# sourcing .zshrc.core, but merged at install time since JSON has no
-# "source". local_override always wins on conflicting keys; the tracked file
-# fills in anything it doesn't set. dest ends up a plain generated file,
-# never a symlink.
+# Native JSON overrides stay local. Invalid input is backed up, not discarded.
 merge_json_file() {
-  local dotfiles_src="$1"
-  local dest="$2"
-  local local_override="$3"
-
-  run mkdir -p "$(dirname "$dest")"
-
-  # Old-style direct symlink from a prior install.sh: drop it so the capture
-  # check below can't mistake the tracked file's own content, read through
-  # the symlink, for machine-local customization.
+  local dotfiles_src="$1" dest="$2" local_override="$3" kind="${4:-}" base tmp captured=""
+  ensure_directory "$(dirname "$dest")"
+  if $DRY_RUN; then
+    info "Merging $dotfiles_src + $local_override → $dest"
+    return
+  fi
   if [[ -L "$dest" ]]; then
-    info "Removing old symlink at $dest"
-    run rm "$dest"
+    if [[ "$(readlink "$dest")" != "$dotfiles_src" && -f "$dest" ]]; then
+      captured="$(cat "$dest")"
+    fi
+    backup_file "$dest"
+  elif [[ -f "$dest" && ! -e "$local_override" && ! -L "$local_override" ]]; then
+    captured="$(cat "$dest")"
   fi
-
-  # First run only: capture whatever real content is already there as the
-  # machine-local baseline, before it gets replaced by a generated file.
-  if [[ -e "$dest" && ! -e "$local_override" ]]; then
-    info "Preserving existing $dest → $local_override"
-    run cp "$dest" "$local_override"
+  if [[ -L "$local_override" ]]; then
+    [[ ! -f "$local_override" ]] || captured="$(cat "$local_override")"
+    backup_file "$local_override"
   fi
-
-  [[ -e "$local_override" ]] || run bash -c "echo '{}' > '$local_override'"
-
-  if ! jq empty "$local_override" 2>/dev/null; then
-    local invalid_backup="${local_override%.json}.invalid.json"
-    warn "$local_override is not valid JSON — preserving as $invalid_backup before resetting to {}"
-    run cp "$local_override" "$invalid_backup"
-    run bash -c "echo '{}' > '$local_override'"
+  if [[ ! -e "$local_override" ]]; then
+    tmp="$(mktemp "${local_override}.tmp.XXXXXX")"
+    printf '%s\n' "${captured:-\{\}}" > "$tmp"
+    mv "$tmp" "$local_override"
+  elif [[ -n "$captured" ]]; then
+    # Preserve both sources when an override already exists.
+    tmp="$(mktemp "${local_override}.tmp.XXXXXX")"
+    if printf '%s' "$captured" | jq -e -s 'length == 1 and (.[0] | type == "object")' >/dev/null 2>&1 && jq -e -s 'length == 1 and (.[0] | type == "object")' "$local_override" >/dev/null 2>&1; then
+      printf '%s' "$captured" | jq --slurpfile local "$local_override" '. * $local[0]' > "$tmp"
+      mv "$tmp" "$local_override"
+    else
+      rm "$tmp"
+    fi
   fi
-
-  info "Merging $dotfiles_src + $local_override → $dest"
-  run bash -c "jq -s '.[0] * .[1]' '$dotfiles_src' '$local_override' > '$dest.tmp' && mv '$dest.tmp' '$dest'"
+  if ! jq -e -s 'length == 1 and (.[0] | type == "object")' "$local_override" >/dev/null 2>&1; then
+    backup_file "$local_override"
+    tmp="$(mktemp "${local_override}.tmp.XXXXXX")"
+    printf '{}\n' > "$tmp"
+    mv "$tmp" "$local_override"
+  fi
+  if [[ "$kind" == opencode ]]; then
+    tmp="$(mktemp "${local_override}.tmp.XXXXXX")"
+    jq 'if (.instructions | type) == "array" then .instructions |= map(if . == "~/.claude/output-styles/my-humble-servant.md" then "~/.agents/personas/my-humble-servant.md" else . end) else . end' "$local_override" > "$tmp"
+    mv "$tmp" "$local_override"
+  fi
+  base="$(mktemp "${dest}.base.XXXXXX")"
+  if [[ "$kind" == claude && "$CLAUDE_DIR" != "$HOME/.claude" ]]; then
+    local status_command
+    printf -v status_command '%q' "$CLAUDE_DIR/statusline.sh"
+    jq --arg command "$status_command" '.statusLine.command = $command' "$dotfiles_src" > "$base"
+  else
+    cp "$dotfiles_src" "$base"
+  fi
+  tmp="$(mktemp "${dest}.tmp.XXXXXX")"
+  jq -s '.[0] * .[1]' "$base" "$local_override" > "$tmp"
+  rm "$base"
+  if [[ -f "$dest" ]] && cmp -s "$tmp" "$dest"; then
+    rm "$tmp"
+  else
+    [[ ! -e "$dest" && ! -L "$dest" ]] || backup_file "$dest"
+    mv "$tmp" "$dest"
+  fi
 }
 
 symlink_dotfiles() {
@@ -170,49 +271,27 @@ symlink_dotfiles() {
 # Installers universally append PATH/init lines to ~/.zshrc by convention —
 # keeping it untracked means that churn never touches the repo.
 ensure_zshrc_loader() {
-  local zshrc="$HOME/.zshrc"
+  local zshrc="$HOME/.zshrc" tmp
   local marker='source "$HOME/.zshrc.core"'
 
   if [[ -L "$zshrc" ]]; then
-    warn "Removing legacy symlink at $zshrc"
-    run rm "$zshrc"
+    backup_file "$zshrc"
   fi
-
-  if [[ ! -e "$zshrc" ]]; then
-    info "Creating $zshrc loader"
-    run bash -c "printf '%s\n' '$marker' > '$zshrc'"
-    return
-  fi
-
-  if grep -qF "$marker" "$zshrc" 2>/dev/null; then
+  if [[ -f "$zshrc" ]] && grep -qF "$marker" "$zshrc"; then
     success "$zshrc already sources .zshrc.core"
     return
   fi
-
-  info "Prepending loader line to existing $zshrc"
-  run bash -c "printf '%s\n\n%s\n' '$marker' \"\$(cat '$zshrc')\" > '$zshrc.tmp' && mv '$zshrc.tmp' '$zshrc'"
-}
-
-# Symlink Claude Code config individually — never symlink all of ~/.claude,
-# which also holds runtime data (sessions, cache, tokens, auto-memory).
-symlink_claude() {
-  run mkdir -p "$HOME/.claude"
-  merge_json_file "$DOTFILES_DIR/.claude/settings.json" "$HOME/.claude/settings.json" "$HOME/.claude/settings.local.json"
-  link_file "$DOTFILES_DIR/.claude/CLAUDE.md"     "$HOME/.claude/CLAUDE.md"
-  link_file "$DOTFILES_DIR/.claude/statusline.sh" "$HOME/.claude/statusline.sh"
-  link_file "$DOTFILES_DIR/.claude/skills"        "$HOME/.claude/skills"
-  link_file "$DOTFILES_DIR/.claude/agents"        "$HOME/.claude/agents"
-  link_file "$DOTFILES_DIR/.claude/output-styles" "$HOME/.claude/output-styles"
-}
-
-# Symlink OpenCode config, reusing Claude Code's tracked config where the
-# schemas line up (rules file; /my:* skills reach OpenCode for free via its
-# native ~/.claude/skills discovery) and adding OpenCode-native files only
-# where the frontmatter schema genuinely differs (agents).
-symlink_opencode() {
-  link_file "$DOTFILES_DIR/.claude/CLAUDE.md"       "$HOME/.config/opencode/AGENTS.md"
-  merge_json_file "$DOTFILES_DIR/.opencode/opencode.json" "$HOME/.config/opencode/opencode.json" "$HOME/.config/opencode/opencode.local.json"
-  link_file "$DOTFILES_DIR/.opencode/agents"        "$HOME/.config/opencode/agents"
+  info "Adding loader line to $zshrc"
+  $DRY_RUN && return
+  tmp="$(mktemp "${zshrc}.tmp.XXXXXX")"
+  {
+    printf '%s\n' "$marker"
+    if [[ -f "$zshrc" ]]; then
+      printf '\n'
+      cat "$zshrc"
+    fi
+  } > "$tmp"
+  mv "$tmp" "$zshrc"
 }
 
 # Add tracked Codex defaults without replacing values written by Codex itself
@@ -234,9 +313,15 @@ codex_config_has_key() {
 install_codex_config() {
   local dest="${1:-$HOME/.codex/config.toml}"
   local src="$DOTFILES_DIR/.codex/config.toml"
-  local section="" key line
+  local section="" key line tmp
 
-  run mkdir -p "$(dirname "$dest")"
+  ensure_directory "$(dirname "$dest")"
+  if [[ -L "$dest" ]] && ! $DRY_RUN; then
+    local saved=""
+    [[ ! -f "$dest" ]] || saved="$(cat "$dest")"
+    backup_file "$dest"
+    [[ -z "$saved" ]] || printf '%s\n' "$saved" > "$dest"
+  fi
   if [[ ! -e "$dest" ]]; then
     info "Installing $dest"
     run cp "$src" "$dest"
@@ -260,94 +345,244 @@ install_codex_config() {
     info "Adding Codex default $setting_name to $dest"
     if $DRY_RUN; then
       continue
-    elif [[ -z "$section" ]]; then
+    fi
+    tmp="$(mktemp "${dest}.tmp.XXXXXX")"
+    if [[ -z "$section" ]]; then
       awk -v new_line="$line" '
         /^\[/ && !added { print new_line; added = 1 }
         { print }
         END { if (!added) print new_line }
-      ' "$dest" > "$dest.tmp"
+      ' "$dest" > "$tmp"
     elif grep -q "^\[$section\]$" "$dest"; then
       awk -v header="[$section]" -v new_line="$line" '
         $0 == header { in_section = 1 }
         in_section && /^\[/ && $0 != header { print new_line; in_section = 0 }
         { print }
         END { if (in_section) print new_line }
-      ' "$dest" > "$dest.tmp"
+      ' "$dest" > "$tmp"
     else
-      { cat "$dest"; printf '\n[%s]\n%s\n' "$section" "$line"; } > "$dest.tmp"
+      { cat "$dest"; printf '\n[%s]\n%s\n' "$section" "$line"; } > "$tmp"
     fi
-    mv "$dest.tmp" "$dest"
+    mv "$tmp" "$dest"
   done < "$src"
 }
 
-# Codex accepts one global AGENTS.md. Assemble it from the shared Claude rules
-# and output style, then append any pre-existing Codex-specific instructions.
-install_codex_instructions() {
-  local dest="$HOME/.codex/AGENTS.md"
-  local local_override="$HOME/.codex/AGENTS.local.md"
+markdown_body() {
+  awk 'NR == 1 && $0 == "---" { front = 1; next } front && $0 == "---" { front = 0; next } !front { print }' "$1"
+}
 
+preserve_generated_destination() {
+  local dest="$1" legacy="${2:-}"
+  if [[ -L "$dest" ]]; then
+    if [[ -n "$legacy" && "$(readlink "$dest")" == "$legacy" ]]; then
+      run rm "$dest"
+    else
+      backup_file "$dest"
+    fi
+  elif [[ -e "$dest" ]] && ! grep -q -e '^<!-- Generated by dotfiles/install.sh -->$' -e '^# Generated by dotfiles/install.sh$' "$dest"; then
+    backup_file "$dest"
+  fi
+}
+
+install_instructions() {
+  local dest="$1" persona="$2" optional="${3:-false}" local_override="${1%.md}.local.md" old="" tmp
+  ensure_directory "$(dirname "$dest")"
   if $DRY_RUN; then
-    info "Generating $dest from Claude rules and output style"
+    info "Generating $dest from neutral rules"
     return
   fi
-
-  if [[ -L "$dest" ]]; then
+  # These links pointed at tracked rules, not personal overrides.
+  if [[ -L "$dest" && ( "$(readlink "$dest")" == "$DOTFILES_DIR/.claude/CLAUDE.md" || "$(readlink "$dest")" == "$DOTFILES_DIR/.agents/AGENTS.md" ) ]]; then
     rm "$dest"
-  elif [[ -f "$dest" && ! -e "$local_override" ]] && ! grep -q '^<!-- Generated by dotfiles/install.sh -->$' "$dest"; then
-    cp "$dest" "$local_override"
+  elif [[ -f "$dest" ]] && ! grep -q '^<!-- Generated by dotfiles/install.sh -->$' "$dest"; then
+    old="$(cat "$dest")"
+    backup_file "$dest"
+  elif [[ -d "$dest" || -L "$dest" ]]; then
+    backup_file "$dest"
   fi
-
+  if [[ -d "$local_override" ]]; then
+    backup_file "$local_override"
+  fi
+  if [[ -n "$old" ]]; then
+    tmp="$(mktemp "${local_override}.tmp.XXXXXX")"
+    [[ ! -f "$local_override" ]] || cat "$local_override" > "$tmp"
+    printf '\n%s\n' "$old" >> "$tmp"
+    [[ ! -L "$local_override" ]] || backup_file "$local_override"
+    mv "$tmp" "$local_override"
+  fi
+  tmp="$(mktemp "${dest}.tmp.XXXXXX")"
   {
     printf '<!-- Generated by dotfiles/install.sh -->\n\n'
-    cat "$DOTFILES_DIR/.claude/CLAUDE.md"
-    printf '\n'
-    cat "$DOTFILES_DIR/.claude/output-styles/my-humble-servant.md"
+    cat "$DOTFILES_DIR/.agents/AGENTS.md"
+    if [[ "$persona" == true ]]; then
+      printf '\n'
+      cat "$DOTFILES_DIR/.agents/personas/my-humble-servant.md"
+    fi
+    if [[ "$optional" == true ]]; then
+      printf '\n## Unsupported workflows\n\n'
+      printf 'This adapter does not install specialist roles. Do not run my-build or\nmy-security without their required specialist roles. Run my-plan only when\nthe harness provides independent exploration subagents.\n'
+    fi
     if [[ -f "$local_override" ]]; then
       printf '\n'
       cat "$local_override"
     fi
-  } > "$dest.tmp"
-  mv "$dest.tmp" "$dest"
-  success "Generated $dest"
+  } > "$tmp"
+  mv "$tmp" "$dest"
 }
 
-# Reuse OpenCode's translated agent prompts while giving Codex its native TOML
-# frontmatter. Keep any existing agent of the same name as a local backup.
-install_codex_agents() {
-  local src dest name description
-  run mkdir -p "$HOME/.codex/agents"
-  for src in "$DOTFILES_DIR"/.opencode/agents/_my-*.md; do
+install_native_agents() {
+  local harness="$1" dir="$2" src name dest template description tmp
+  case "$harness" in
+    claude) ensure_directory "$dir" "$DOTFILES_DIR/.claude/agents" ;;
+    opencode) ensure_directory "$dir" "$DOTFILES_DIR/.opencode/agents" ;;
+    *) ensure_directory "$dir" ;;
+  esac
+  for src in "$DOTFILES_DIR"/.agents/agents/_my-*.md; do
     name="$(basename "$src" .md)"
-    dest="$HOME/.codex/agents/$name.toml"
+    template=""
+    case "$harness" in
+      claude|opencode) dest="$dir/$name.md"; template="$DOTFILES_DIR/.$harness/templates/agents/$name.md" ;;
+      copilot) dest="$dir/$name.agent.md"; template="$DOTFILES_DIR/.copilot/agents/$name.agent.md" ;;
+      codex) dest="$dir/$name.toml" ;;
+    esac
     if $DRY_RUN; then
       info "Generating $dest from $src"
       continue
     fi
-    if [[ -e "$dest" && ! -e "$dest.bak" ]] && ! grep -q '^# Generated by dotfiles/install.sh$' "$dest"; then
-      cp "$dest" "$dest.bak"
+    preserve_generated_destination "$dest" "$template"
+    tmp="$(mktemp "${dest}.tmp.XXXXXX")"
+    if [[ "$harness" == codex ]]; then
+      description="$(sed -n 's/^description: //p' "$src" | head -n 1)"
+      {
+        printf '# Generated by dotfiles/install.sh\n'
+        printf 'name = %s\n' "$(printf '%s' "$name" | jq -Rs .)"
+        printf 'description = %s\n' "$(printf '%s' "$description" | jq -Rs .)"
+        [[ "$name" == _my-implementer ]] || printf 'sandbox_mode = "read-only"\n'
+        printf 'developer_instructions = %s\n' "$(markdown_body "$src" | jq -Rs .)"
+      } > "$tmp"
+    else
+      {
+        cat "$template"
+        printf '\n<!-- Generated by dotfiles/install.sh -->\n\n'
+        markdown_body "$src"
+      } > "$tmp"
     fi
-    description="$(sed -n 's/^description: //p' "$src" | head -n 1)"
-    {
-      printf '# Generated by dotfiles/install.sh\n'
-      printf 'name = %s\n' "$(printf '%s' "$name" | jq -Rs .)"
-      printf 'description = %s\n' "$(printf '%s' "$description" | jq -Rs .)"
-      [[ "$name" == _my-implementer ]] || printf 'sandbox_mode = "read-only"\n'
-      printf 'developer_instructions = %s\n' "$(awk 'NR == 1 && $0 == "---" { front = 1; next } front && $0 == "---" { front = 0; next } !front { print }' "$src" | jq -Rs .)"
-    } > "$dest.tmp"
-    mv "$dest.tmp" "$dest"
-    success "Generated $dest"
+    mv "$tmp" "$dest"
   done
 }
 
-symlink_codex() {
-  install_codex_config
-  install_codex_instructions
-  run mkdir -p "$HOME/.agents/skills"
-  local skill
-  for skill in "$DOTFILES_DIR"/.claude/skills/my-*; do
+install_shared_agents() {
+  local skill src tmp dest="$HOME/.agents/exports/default.md"
+  ensure_directory "$HOME/.agents"
+  link_file "$DOTFILES_DIR/.agents/AGENTS.md" "$HOME/.agents/AGENTS.md"
+  ensure_directory "$HOME/.agents/personas"
+  link_file "$DOTFILES_DIR/.agents/personas/my-humble-servant.md" "$HOME/.agents/personas/my-humble-servant.md"
+  ensure_directory "$HOME/.agents/agents"
+  for src in "$DOTFILES_DIR"/.agents/agents/_my-*.md; do
+    link_file "$src" "$HOME/.agents/agents/$(basename "$src")"
+  done
+  ensure_directory "$HOME/.agents/skills"
+  for skill in "$DOTFILES_DIR"/.agents/skills/my-*; do
     link_file "$skill" "$HOME/.agents/skills/$(basename "$skill")"
   done
-  install_codex_agents
+  ensure_directory "$HOME/.agents/exports"
+  if $DRY_RUN; then
+    info "Generating manual export $dest"
+    return
+  fi
+  preserve_generated_destination "$dest"
+  tmp="$(mktemp "${dest}.tmp.XXXXXX")"
+  {
+    printf '<!-- Generated by dotfiles/install.sh -->\n\n'
+    cat "$DOTFILES_DIR/.agents/AGENTS.md"
+    printf '\n'
+    cat "$DOTFILES_DIR/.agents/personas/my-humble-servant.md"
+    printf '\n## Skills\n\nLoad each skill file explicitly if the harness has no native skill discovery.\n\n'
+    for skill in "$DOTFILES_DIR"/.agents/skills/my-*; do
+      printf -- '- `%s`: `%s/SKILL.md`' "$(basename "$skill")" "$HOME/.agents/skills/$(basename "$skill")"
+      case "$(basename "$skill")" in
+        my-build) printf ' — requires implementation and review subagents with specialist roles.' ;;
+        my-security) printf ' — requires an independent read-only security-reviewer role.' ;;
+        my-plan) printf ' — requires independent exploration subagents.' ;;
+      esac
+      printf '\n'
+    done
+  } > "$tmp"
+  mv "$tmp" "$dest"
+}
+
+install_claude() {
+  local skill dest="$CLAUDE_DIR/output-styles/my-humble-servant.md" tmp
+  ensure_directory "$CLAUDE_DIR"
+  merge_json_file "$DOTFILES_DIR/.claude/settings.json" "$CLAUDE_DIR/settings.json" "$CLAUDE_DIR/settings.local.json" claude
+  install_instructions "$CLAUDE_DIR/CLAUDE.md" false
+  link_file "$DOTFILES_DIR/.claude/statusline.sh" "$CLAUDE_DIR/statusline.sh"
+  ensure_directory "$CLAUDE_DIR/skills" "$DOTFILES_DIR/.claude/skills"
+  for skill in "$DOTFILES_DIR"/.agents/skills/my-*; do
+    link_file "$skill" "$CLAUDE_DIR/skills/$(basename "$skill")"
+  done
+  install_native_agents claude "$CLAUDE_DIR/agents"
+  ensure_directory "$CLAUDE_DIR/output-styles" "$DOTFILES_DIR/.claude/output-styles"
+  if $DRY_RUN; then
+    info "Generating $dest"
+    return
+  fi
+  preserve_generated_destination "$dest" "$DOTFILES_DIR/.claude/templates/output-styles/my-humble-servant.md"
+  tmp="$(mktemp "${dest}.tmp.XXXXXX")"
+  {
+    cat "$DOTFILES_DIR/.claude/templates/output-styles/my-humble-servant.md"
+    printf '\n<!-- Generated by dotfiles/install.sh -->\n\n'
+    cat "$DOTFILES_DIR/.agents/personas/my-humble-servant.md"
+  } > "$tmp"
+  mv "$tmp" "$dest"
+}
+
+install_opencode() {
+  ensure_directory "$OPENCODE_DIR"
+  install_instructions "$OPENCODE_DIR/AGENTS.md" false
+  merge_json_file "$DOTFILES_DIR/.opencode/opencode.json" "$OPENCODE_DIR/opencode.json" "$OPENCODE_DIR/opencode.local.json" opencode
+  install_native_agents opencode "$OPENCODE_DIR/agents"
+}
+
+install_codex() {
+  ensure_directory "$CODEX_DIR"
+  install_codex_config "$CODEX_DIR/config.toml"
+  install_instructions "$CODEX_DIR/AGENTS.md" true
+  install_native_agents codex "$CODEX_DIR/agents"
+}
+
+install_copilot() {
+  ensure_directory "$COPILOT_DIR"
+  install_instructions "$COPILOT_DIR/copilot-instructions.md" true
+  install_native_agents copilot "$COPILOT_DIR/agents"
+}
+
+install_optional() {
+  local tool="$1" dir="$2" file="$3" skill
+  ensure_directory "$dir"
+  install_instructions "$dir/$file" true true
+  if [[ "$tool" == gemini && "$GEMINI_DIR" != "$HOME/.gemini" ]]; then
+    ensure_directory "$dir/skills"
+    for skill in "$DOTFILES_DIR"/.agents/skills/my-*; do
+      link_file "$skill" "$dir/skills/$(basename "$skill")"
+    done
+  fi
+}
+
+install_agents() {
+  local tool
+  command -v jq &>/dev/null || { error "jq is required for agent installation"; return 1; }
+  install_shared_agents
+  for tool in "${SELECTED_TOOLS[@]}"; do
+    case "$tool" in
+      claude) install_claude ;;
+      codex) install_codex ;;
+      opencode) install_opencode ;;
+      copilot) install_copilot ;;
+      gemini) install_optional gemini "$GEMINI_DIR" GEMINI.md ;;
+      amp) install_optional amp "$AMP_DIR" AGENTS.md ;;
+    esac
+  done
 }
 
 # =============================================================================
@@ -403,18 +638,22 @@ main() {
   $DRY_RUN && warn "Dry-run mode — no changes will be made"
   echo ""
 
-  install_packages
-  install_pretty_print_tools
-  symlink_dotfiles
-  ensure_zshrc_loader
-  symlink_claude
-  symlink_opencode
-  symlink_codex
-  set_default_shell
-  install_antidote
+  if ! $AGENTS_ONLY; then
+    install_packages
+    install_pretty_print_tools
+    symlink_dotfiles
+    ensure_zshrc_loader
+  fi
+  install_agents
+  if ! $AGENTS_ONLY; then
+    set_default_shell
+    install_antidote
+  fi
 
   echo ""
-  success "Done! Start a new zsh session to load everything."
+  success "Done! Agent configuration installed."
+  $AGENTS_ONLY && return
+  info "Start a new zsh session to load everything."
   info "On first launch, antidote will clone all plugins (takes ~10s)."
   info "Tip: ~/.zshrc is untracked — machine-specific lines (installer PATH appends, etc.) belong there."
   echo ""

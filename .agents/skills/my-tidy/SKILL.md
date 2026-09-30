@@ -5,7 +5,7 @@ description: >-
   TRIGGER — invoke whenever the user wants the current diff cleaned up or
   polished before committing (e.g. "clean this up", "tidy the diff", "polish
   this before I commit"). SKIP when they want a correctness/bug review — that's
-  /code-review, not this.
+  a code-quality review, not this.
 ---
 
 Review only the changes in the current working tree (`git diff` and staged) and
