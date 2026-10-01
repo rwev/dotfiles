@@ -250,7 +250,7 @@ Run the isolated installer suite with Python 3.11 or newer. Python is a test
 requirement only; installation uses Bash and jq.
 
 ```bash
-bash -n install.sh
+for file in install.sh install/*.sh; do bash -n "$file"; done
 python3 -m unittest discover -s tests -v
 ```
 
@@ -266,7 +266,7 @@ Check native discovery after installation:
 - Gemini: inspect `/memory show` and skill discovery.
 - Amp: inspect instruction sources and skill listings.
 
-Implementation validation passed the 17 isolated tests. Codex's debug prompt
+Implementation validation passed the 26 isolated tests. Codex's debug prompt
 input showed the rules, one persona, and all twelve skills; all three generated
 Codex profiles parsed as TOML. Actual specialist execution and interactive
 Claude discovery remain unverified. OpenCode, Copilot, Gemini, and Amp were not
@@ -276,7 +276,13 @@ installed on the validation machine, so their runtime discovery is unverified.
 
 ```text
 dotfiles/
-├── install.sh          # Shell bootstrap and per-tool agent adapters
+├── install.sh          # Installer options and task order
+├── install/
+│   ├── common.sh       # Shared file helpers
+│   ├── agent-config.sh # JSON merges and Codex TOML defaults
+│   ├── packages.sh     # Package installation
+│   ├── shell.sh        # Dotfile links and shell setup
+│   └── agents.sh       # Per-tool agent adapters
 ├── .zshrc              # ~/.zshrc.core; local ~/.zshrc loads it
 ├── .zsh_plugins.txt    # Antidote plugin list
 ├── .agents/            # Canonical rules, skills, persona, and specialist bodies

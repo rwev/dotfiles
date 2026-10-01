@@ -160,6 +160,7 @@ class InstallerTests(unittest.TestCase):
     def test_legacy_unrelated_children(self):
         fixture = Path(self.tmp.name) / 'repo'
         fixture.mkdir()
+        shutil.copytree(ROOT / 'install', fixture / 'install')
         for folder in ['.agents', '.codex', '.opencode/templates', '.claude/templates', '.copilot']:
             shutil.copytree(ROOT / folder, fixture / folder)
         for path in ['install.sh', '.claude/settings.json', '.claude/statusline.sh', '.opencode/opencode.json']:
@@ -188,6 +189,63 @@ class InstallerTests(unittest.TestCase):
         before = self.snapshot()
         self.install()
         self.assertEqual(before, self.snapshot())
+
+    def test_failed_generated_render_keeps_existing_output(self):
+        fixture = Path(self.tmp.name) / 'repo'
+        fixture.mkdir()
+        shutil.copytree(ROOT / 'install', fixture / 'install')
+        shutil.copytree(ROOT / '.agents', fixture / '.agents')
+        shutil.copy2(ROOT / 'install.sh', fixture / 'install.sh')
+        (fixture / '.agents/personas/my-humble-servant.md').unlink()
+        self.root = fixture
+        export = self.home / '.agents/exports/default.md'
+        export.parent.mkdir(parents=True)
+        export.write_text('custom export\n')
+
+        self.install('--tools=universal', ok=False)
+        self.assertEqual(export.read_text(), 'custom export\n')
+        self.assertEqual(list(export.parent.glob('default.md.bak*')), [])
+        self.assertEqual(list(export.parent.glob('default.md.tmp.*')), [])
+
+    def test_failed_json_render_keeps_existing_output(self):
+        fixture = Path(self.tmp.name) / 'repo'
+        fixture.mkdir()
+        shutil.copytree(ROOT / 'install', fixture / 'install')
+        shutil.copytree(ROOT / '.agents', fixture / '.agents')
+        (fixture / '.claude').mkdir()
+        (fixture / '.claude/settings.json').write_text('{bad json')
+        shutil.copy2(ROOT / 'install.sh', fixture / 'install.sh')
+        self.root = fixture
+        settings = self.home / '.claude/settings.json'
+        settings.parent.mkdir()
+        settings.write_text('custom settings\n')
+
+        self.install('--tools=claude', ok=False)
+        self.assertEqual(settings.read_text(), 'custom settings\n')
+        self.assertEqual(list(settings.parent.glob('settings.json.bak*')), [])
+        self.assertEqual(list(settings.parent.glob('settings.json.tmp.*')), [])
+
+    def test_invalid_tracked_json_source_keeps_existing_output(self):
+        fixture = Path(self.tmp.name) / 'repo'
+        fixture.mkdir()
+        shutil.copytree(ROOT / 'install', fixture / 'install')
+        shutil.copytree(ROOT / '.agents', fixture / '.agents')
+        (fixture / '.claude').mkdir()
+        shutil.copy2(ROOT / 'install.sh', fixture / 'install.sh')
+        self.root = fixture
+        settings = self.home / '.claude/settings.json'
+        settings.parent.mkdir()
+        settings.write_text('{"custom":true}\n')
+        (settings.parent / 'settings.local.json').write_text('{}\n')
+
+        for content in ['null', '[]', '{}\n{}']:
+            with self.subTest(content=content):
+                (fixture / '.claude/settings.json').write_text(content)
+                self.install('--tools=claude', ok=False)
+                self.assertEqual(settings.read_text(), '{"custom":true}\n')
+                self.assertEqual(list(settings.parent.glob('settings.json.bak*')), [])
+                self.assertEqual(list(settings.parent.glob('settings.json.tmp.*')), [])
+                self.assertEqual(list(settings.parent.glob('settings.json.base.*')), [])
 
     def test_opencode_standalone_local_migration(self):
         directory = self.home / '.config/opencode'
@@ -225,6 +283,44 @@ class InstallerTests(unittest.TestCase):
         for role in ['reviewer', 'security-reviewer']:
             config = tomllib.loads((directory / f'agents/_my-{role}.toml').read_text())
             self.assertEqual(config['sandbox_mode'], 'read-only')
+
+    def test_codex_defaults_insert_into_existing_sections(self):
+        directory = self.home / '.codex'
+        directory.mkdir()
+        config_file = directory / 'config.toml'
+        config_file.write_text('model = "custom"\ndefault_permissions = "custom"\n\n'
+                               '[features]\ncustom = true\n\n[tui]\ntheme = "custom"\n')
+        self.install('--tools=codex')
+        config = tomllib.loads(config_file.read_text())
+        self.assertEqual(config['model'], 'custom')
+        self.assertNotIn('sandbox_mode', config)
+        self.assertEqual(config['features'], {'custom': True, 'memories': False})
+        self.assertEqual(config['tui']['theme'], 'custom')
+        self.assertEqual(config['tui']['alternate_screen'], 'always')
+        before = config_file.read_text()
+        self.install('--tools=codex')
+        self.assertEqual(config_file.read_text(), before)
+
+    def test_codex_defaults_respect_commented_section_headers(self):
+        directory = self.home / '.codex'
+        directory.mkdir()
+        config_file = directory / 'config.toml'
+        config_file.write_text('model = "custom"\ndefault_permissions = "custom"\n\n'
+                               '[features] # keep this note\ncustom = true\n\n'
+                               '[tui] # another note\ntheme = "custom"\n')
+
+        self.install('--tools=codex')
+        text = config_file.read_text()
+        config = tomllib.loads(text)
+        self.assertEqual(text.count('[features]'), 1)
+        self.assertEqual(text.count('[tui]'), 1)
+        self.assertEqual(config['features'], {'custom': True, 'memories': False})
+        self.assertEqual(config['tui']['theme'], 'custom')
+        self.assertEqual(config['tui']['alternate_screen'], 'always')
+        self.assertEqual(config['default_permissions'], 'custom')
+        self.assertNotIn('sandbox_mode', config)
+        self.install('--tools=codex')
+        self.assertEqual(config_file.read_text(), text)
 
     def test_json_with_existing_local_is_backed_up(self):
         directory = self.home / '.claude'
@@ -297,6 +393,74 @@ class InstallerTests(unittest.TestCase):
         self.assertNotIn(str(self.home / '.codex'), result.stdout)
         self.assertNotIn(str(self.home / '.claude'), result.stdout)
         self.assertIn(str(self.home / '.agents'), result.stdout)
+
+    def test_full_dry_run_without_zsh(self):
+        commands = Path(self.tmp.name) / 'commands'
+        commands.mkdir()
+        for name in ['apt-get', 'basename', 'dirname', 'jq']:
+            (commands / name).symlink_to('/usr/bin/true' if name == 'apt-get' else shutil.which(name))
+        self.env['PATH'] = str(commands)
+        self.env['SHELL'] = '/bin/bash'
+        result = subprocess.run(['/bin/bash', str(self.root / 'install.sh'), '--dry-run', '--tools=universal'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('Changing default shell to zsh', result.stdout)
+        self.assertIn('Dry run complete.', result.stdout)
+        self.assertEqual(self.snapshot(), {})
+
+    def test_optional_homebrew_failures_warn(self):
+        commands = Path(self.tmp.name) / 'commands'
+        commands.mkdir()
+        (commands / 'dirname').symlink_to('/usr/bin/dirname')
+        brew = commands / 'brew'
+        brew.write_text('#!/bin/sh\nexit 42\n')
+        brew.chmod(0o755)
+        self.env['PATH'] = str(commands)
+        result = subprocess.run(['/bin/bash', '-c',
+                                 'source "$1" --agents-only; select_package_manager; install_pretty_print_tools',
+                                 'bash', str(ROOT / 'install.sh')], env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('Failed to install bat', result.stdout)
+        self.assertIn('Failed to install glow', result.stdout)
+
+    def test_required_homebrew_failure_is_fatal(self):
+        commands = Path(self.tmp.name) / 'commands'
+        commands.mkdir()
+        (commands / 'dirname').symlink_to('/usr/bin/dirname')
+        brew = commands / 'brew'
+        brew.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$CALLS"\nexit 42\n')
+        brew.chmod(0o755)
+        calls = Path(self.tmp.name) / 'calls'
+        self.env['PATH'] = str(commands)
+        self.env['CALLS'] = str(calls)
+        result = subprocess.run(['/bin/bash', '-c',
+                                 'source "$1" --agents-only; select_package_manager; install_packages',
+                                 'bash', str(ROOT / 'install.sh')], env=self.env, capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('brew install failed', result.stderr)
+        self.assertEqual(calls.read_text(), 'install zsh fzf git jq\n')
+
+    def test_glow_snap_fallback_with_apt(self):
+        commands = Path(self.tmp.name) / 'commands'
+        commands.mkdir()
+        (commands / 'dirname').symlink_to('/usr/bin/dirname')
+        for name in ['apt-get', 'bat', 'snap']:
+            (commands / name).symlink_to('/usr/bin/true')
+        brew = commands / 'brew'
+        brew.write_text('#!/bin/sh\nexit 42\n')
+        brew.chmod(0o755)
+        sudo = commands / 'sudo'
+        sudo.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$CALLS"\n')
+        sudo.chmod(0o755)
+        calls = Path(self.tmp.name) / 'calls'
+        self.env['PATH'] = str(commands)
+        self.env['CALLS'] = str(calls)
+        result = subprocess.run(['/bin/bash', '-c',
+                                 'source "$1" --agents-only; select_package_manager; install_pretty_print_tools',
+                                 'bash', str(ROOT / 'install.sh')], env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(calls.read_text(), 'snap install glow\n')
+        self.assertNotIn('[warn]', result.stdout)
 
     def test_runtime_and_unrelated_skills_untouched(self):
         files = {}
