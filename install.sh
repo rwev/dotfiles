@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Dotfiles installer
-# Usage: bash install.sh [--dry-run] [--agents-only] [--tools=claude,codex,opencode,copilot]
+# Usage: bash install.sh [--dry-run] [--agents-only] [--tools=claude,codex,opencode,copilot,gemini,amp,grok]
 set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,7 +24,7 @@ done
 IFS=, read -r -a SELECTED_TOOLS <<< "$TOOLS"
 for tool in "${SELECTED_TOOLS[@]}"; do
   case "$tool" in
-    claude|codex|opencode|copilot|gemini|amp) ;;
+    claude|codex|opencode|copilot|gemini|amp|grok) ;;
     universal) [[ "$TOOLS" == universal ]] || { printf 'universal must be used alone\n' >&2; exit 1; } ;;
     *) printf 'Unknown tool: %s\n' "$tool" >&2; exit 1 ;;
   esac
@@ -35,6 +35,7 @@ COPILOT_DIR="${COPILOT_HOME:-$HOME/.copilot}"
 OPENCODE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
 AMP_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/amp"
 GEMINI_DIR="${GEMINI_CLI_HOME:-$HOME}/.gemini"
+GROK_DIR="${GROK_HOME:-$HOME/.grok}"
 
 source "$DOTFILES_DIR/install/common.sh"
 source "$DOTFILES_DIR/install/agent-config.sh"

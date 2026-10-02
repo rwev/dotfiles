@@ -1,0 +1,46 @@
+[models]
+default_reasoning_effort = "high"
+
+[memory]
+enabled = false
+
+[memory_v2]
+enabled = false
+
+[ui]
+screen_mode = "fullscreen"
+theme = "dark"
+
+[ui.status_line]
+type = "command"
+command = "~/.grok/statusline.sh"
+
+[toolset.ask_user_question]
+timeout_secs = 600
+
+[subagents]
+enabled = true
+
+[features]
+active_agent_messages = true
+subagent_model_inheritance = true
+
+[sandbox]
+profile = "workspace"
+
+[compat.claude]
+agents = false
+
+[permission]
+deny = [
+  "Read(**/.env)",
+  "Read(**/.env.*)",
+  "Read(secrets/**)",
+  "Read(**/*.pem)",
+  "Read(**/*.key)",
+  "Read(**/id_rsa)",
+  "Read(**/id_ed25519)",
+  "Read(**/credentials.json)",
+  "Read(**/.ssh/**)",
+  "Read(**/.aws/credentials)",
+]

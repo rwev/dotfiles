@@ -222,5 +222,10 @@ alias cld='claude --dangerously-skip-permissions'
 alias cldc='claude --continue --dangerously-skip-permissions'   # continue most recent session
 alias cldr='claude --resume --dangerously-skip-permissions'     # pick a session to resume
 
+# Grok — skip approval prompts; keep deny rules and the configured sandbox.
+alias grk='grok --always-approve'
+alias grkc='grok --continue --always-approve'
+alias grkr='grok --resume --always-approve'
+
 # Codex — skip approval prompts and sandboxing.
 alias cxd='codex --dangerously-bypass-approvals-and-sandbox'

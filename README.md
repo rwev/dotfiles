@@ -88,13 +88,15 @@ See the [Agent Skills specification](https://agentskills.io/specification) and
 | Copilot CLI   | `~/.copilot/copilot-instructions.md`         | Reads `~/.agents/skills`. [Docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills). |
 | Gemini CLI    | `~/.gemini/GEMINI.md`                        | Reads `~/.agents/skills`. [Docs](https://geminicli.com/docs/cli/skills/).                                              |
 | Amp           | `~/.config/amp/AGENTS.md`                    | Reads `~/.agents/skills`. [Docs](https://ampcode.com/docs/customize/skills).                                           |
+| Grok Build    | `~/.grok/AGENTS.md`                          | Reads `~/.agents/skills`. [Docs](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md). |
 
 Native instruction loading differs. See [Claude memory](https://code.claude.com/docs/en/memory),
 [Codex AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md),
 [OpenCode rules](https://opencode.ai/docs/rules/),
 [Copilot instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions),
 [Gemini context](https://geminicli.com/docs/cli/gemini-md/), and
-[Amp instructions](https://ampcode.com/docs/customize/agents-md).
+[Amp instructions](https://ampcode.com/docs/customize/agents-md), and
+[Grok project rules](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/12-project-rules.md).
 
 Personas and specialist roles have no common discovery format. Their prompt
 bodies are shared; the installer generates native files. Portable content does
@@ -117,8 +119,11 @@ bash install.sh --agents-only --tools=universal
 # Install optional adapters and shared content.
 bash install.sh --agents-only --tools=gemini,amp
 
-# Install all six adapters.
-bash install.sh --agents-only --tools=claude,codex,opencode,copilot,gemini,amp
+# Install the optional official xAI Grok Build adapter.
+bash install.sh --agents-only --tools=grok
+
+# Install all seven adapters.
+bash install.sh --agents-only --tools=claude,codex,opencode,copilot,gemini,amp,grok
 ```
 
 `--agents-only` skips packages, shell changes, and unrelated dotfiles.
@@ -130,21 +135,29 @@ The installer honors `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, and `COPILOT_HOME`.
 OpenCode and Amp use `XDG_CONFIG_HOME`. `GEMINI_CLI_HOME` replaces Gemini's home
 root: its config destination is `$GEMINI_CLI_HOME/.gemini`, not the variable
 itself. A custom Gemini home also receives individual native skill links.
+Grok Build uses `GROK_HOME` directly, with `~/.grok` as the default. It still
+reads shared skills from `~/.agents/skills` with a custom home. The installer
+does not create duplicate Grok skill links.
 
 ### Sources and defaults
 
-| Source                                      | Purpose                                                      |
-| ------------------------------------------- | ------------------------------------------------------------ |
-| `.agents/AGENTS.md`                         | Concise working rules, safety defaults, and verification.    |
-| `.agents/skills/my-*/SKILL.md`              | Twelve portable workflows.                                   |
-| `.agents/personas/my-humble-servant.md`     | Plain Markdown persona body.                                 |
-| `.agents/agents/_my-*.md`                   | Three shared specialist instruction bodies.                  |
-| `.claude/templates/`                        | Native role and output-style metadata, outside discovery.    |
-| `.opencode/templates/agents/`               | Native role metadata, outside discovery.                     |
-| `.copilot/agents/`                          | Native Copilot role metadata.                                |
-| `.claude/settings.json`                     | Existing Claude runtime defaults and statusline wiring.      |
-| `.opencode/opencode.json`                   | Existing permissions and neutral persona instruction path.   |
-| `.codex/config.toml`                        | Existing Codex runtime defaults.                             |
+| Source                                  | Purpose                                                        |
+| --------------------------------------- | -------------------------------------------------------------- |
+| `.agents/AGENTS.md`                     | Concise working rules, safety defaults, and verification.      |
+| `.agents/skills/my-*/SKILL.md`          | Twelve portable workflows.                                     |
+| `.agents/personas/my-humble-servant.md` | Plain Markdown persona body.                                   |
+| `.agents/agents/_my-*.md`               | Three shared specialist instruction bodies.                    |
+| `.claude/templates/`                    | Native role and output-style metadata, outside discovery.      |
+| `.opencode/templates/agents/`           | Native role metadata, outside discovery.                       |
+| `.copilot/agents/`                      | Native Copilot role metadata.                                  |
+| `.claude/settings.json`                 | Existing Claude runtime defaults and statusline wiring.        |
+| `.opencode/opencode.json`               | Existing permissions and neutral persona instruction path.     |
+| `.codex/config.toml`                    | Existing Codex runtime defaults.                               |
+| `.grok/templates/agents/`               | Native Grok specialist metadata, outside discovery.            |
+| `.grok/config.toml`                     | Grok runtime defaults and command statusline wiring.           |
+| `.grok/statusline.sh`                   | Model, effort, project, branch, context use, and session cost. |
+| `.grok/notify.sh`                       | Desktop attention alerts with a terminal-bell fallback.        |
+| `.grok/hooks/notifications.json`        | Native idle and approval notification matchers.                |
 
 Rules keep changes small, reuse existing code, require verification, and report
 failures honestly. Explicit user instructions override these personal defaults.
@@ -153,11 +166,60 @@ The default persona is `my-humble-servant`. Each adapter supplies it once:
 
 - Claude uses a generated native output style; global instructions contain rules only.
 - OpenCode loads the neutral persona through its `instructions` setting.
-- Codex, Copilot, Gemini, and Amp receive rules plus the persona in global instructions.
+- Codex, Copilot, Gemini, Amp, and Grok receive rules plus the persona in global instructions.
 
 Existing model, reasoning, permission, memory, plugin, and UI defaults stay in
 place. Copilot, Gemini, and Amp keep vendor runtime defaults. The installer adds
 no authentication or model configuration for them.
+
+### Grok runtime and attention signals
+
+Grok fills missing defaults from `.grok/config.toml`. Existing local values win.
+The adapter does not pin a model. Its defaults are:
+
+- High reasoning effort; memory and memory v2 disabled.
+- Fullscreen UI with the dark theme and a command statusline.
+- A 600-second ask-user timeout; subagents and active-agent messages enabled.
+- Model inheritance for subagents; the `workspace` sandbox profile.
+- Read-deny rules for common secret paths.
+- `[compat.claude] agents = false`, to avoid duplicate Claude global instructions.
+
+Other Claude compatibility settings remain unchanged. The `grk`, `grkc`, and
+`grkr` aliases skip approval prompts with `--always-approve`. They keep deny
+rules and the configured sandbox. Linux workspace sandboxing requires
+`bubblewrap`; Grok refuses startup if it cannot enforce the deny rules. See
+[Grok configuration](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/26-config-reference.md)
+and [sandbox profiles](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/18-sandbox.md).
+
+The statusline shows available model, effort, project basename, branch,
+current context-use percentage, and positive session cost:
+
+```text
+Grok · high · dotfiles · branch · 18% ctx · $0.120
+```
+
+Missing values stay hidden; zero context use remains `0% ctx`. Cost is unknown
+until Grok supplies it. The script does not infer context use from cumulative
+session tokens. Grok supplies no rate-limit or changed-line totals, so the
+script omits them. It reads only the native payload, not private transcripts,
+and makes no network requests. See
+[statusline data](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/25-status-line.md).
+
+Native `Notification` hooks report `Ready for input` for `idle_prompt` and
+`Approval needed` for `permission_prompt`. They show only the project basename,
+not prompts or assistant text. The idle alert fires after about one minute of
+sustained main-session idle. It means the session awaits input, not that a task
+succeeded: Grok can also become idle after an error or interruption. A new
+message cancels the pending idle alert. There are no `Stop`, `SubagentStop`, or
+`task_complete` alerts.
+
+Linux uses `notify-send` when available. macOS uses `osascript`. If no helper
+works, the handler tries a terminal bell; without a terminal, it stays quiet.
+Notification failures do not block Grok. The installer adds no desktop helper.
+It links scripts individually and copies the hook JSON as a regular file,
+because the workspace sandbox rejects symlinked hook sources. Restart Grok
+after changing its config or hooks. See
+[native hooks](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md).
 
 ### Skills and specialist roles
 
@@ -179,12 +241,17 @@ no authentication or model configuration for them.
 Use native invocation syntax: `/my-commit` in Claude, `$my-commit` in Codex,
 or ask the CLI to use the named skill. Syntax depends on the harness.
 
-The four default adapters install `_my-implementer`, `_my-reviewer`, and
+The four default adapters and Grok install `_my-implementer`, `_my-reviewer`, and
 `_my-security-reviewer`. Reviewer profiles omit native edit tools or restrict
 edit permissions. Claude, OpenCode, and Copilot reviewers still have shell
 access; those settings and prompts are not enforced filesystem isolation.
 Codex reviewer profiles request a native read-only sandbox. Parent runtime
 settings can affect the effective sandbox.
+Grok reviewer profiles omit shell and edit tools and disable MCP access.
+Supply the full diff, test results, task requirements, and task baseline when
+you dispatch a Grok reviewer. It cannot run Git commands or tests. These tool
+restrictions are not a filesystem sandbox. Grok's implementer can read, edit, and run shell commands.
+See [Grok subagents](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md).
 
 `my-plan`, `my-build`, and `my-security` check required capabilities before work.
 They stop as unsupported when their required subagents or roles are absent.
@@ -205,6 +272,20 @@ are captured on first installation. Edit `~/.claude/settings.local.json` or
 `~/.config/opencode/opencode.local.json`, then rerun the installer.
 Codex fills only missing TOML defaults. Existing values remain in place.
 
+Grok also keeps existing values, including an explicit `agents = true`.
+That value, or `GROK_CLAUDE_AGENTS_ENABLED=true`, can restore duplicate Claude
+global instructions. Grok config updates support bare TOML tables and keys.
+Configs with quoted table or key names remain unchanged, including escaped
+names. Dotted keys, inline tables, conflicting scalar ancestors, and multiline
+strings also remain unchanged. Add missing defaults locally in those files.
+The installer does not validate TOML. A config symlink remains unchanged if
+all tracked settings exist. If a missing
+setting must be added, the installer backs up the link and creates a real
+config file; it does not change the external target. Custom `GROK_HOME` paths
+receive a shell-quoted statusline command. Existing statusline commands stay
+unchanged. Other local hook files stay unchanged; an existing custom
+`notifications.json` is backed up before replacement.
+
 Global instruction overrides are appended from these machine-local files:
 
 | CLI           | Local instruction file                                    |
@@ -215,6 +296,7 @@ Global instruction overrides are appended from these machine-local files:
 | Copilot CLI   | `~/.copilot/copilot-instructions.local.md`                |
 | Gemini CLI    | `~/.gemini/GEMINI.local.md`                               |
 | Amp           | `~/.config/amp/AGENTS.local.md`                           |
+| Grok Build    | `~/.grok/AGENTS.local.md`                                 |
 
 These paths follow custom native homes when set. Pre-existing unmanaged global
 instructions are saved and imported into the local instruction file.
@@ -250,13 +332,17 @@ Run the isolated installer suite with Python 3.11 or newer. Python is a test
 requirement only; installation uses Bash and jq.
 
 ```bash
-for file in install.sh install/*.sh; do bash -n "$file"; done
+for file in install.sh install/*.sh .grok/*.sh; do bash -n "$file"; done
+zsh -n .zshrc
 python3 -m unittest discover -s tests -v
 ```
 
 The suite covers clean installs, repeat runs, target selection, custom homes,
 dry runs, local overrides, migration, backups, invalid JSON, and untouched
-runtime files. It also checks generated profiles and skill metadata.
+runtime files. It also checks generated profiles and skill metadata. When
+`grok` is on `PATH`, it checks native discovery in isolated homes outside this
+repository. The check sends no model requests. Script tests use mock desktop
+helpers and an isolated terminal; they send no real desktop alerts.
 
 Check native discovery after installation:
 
@@ -265,9 +351,19 @@ Check native discovery after installation:
 - Copilot: inspect `/instructions`, `copilot skill list`, and custom agents.
 - Gemini: inspect `/memory show` and skill discovery.
 - Amp: inspect instruction sources and skill listings.
+- Grok: run `grok inspect --json` to inspect instructions, skills, agents, and hooks.
 
-Implementation validation passed the 26 isolated tests. Codex's debug prompt
-input showed the rules, one persona, and all twelve skills; all three generated
+Implementation validation passed the 57 isolated tests. Grok Build 1.0.46
+discovered all twelve skills and three native specialist definitions with
+default and custom homes. Active instructions contained one rules body and
+one persona when the Claude adapter was also installed. This passed with
+native config and with Claude instruction compatibility disabled by environment.
+The native check also discovered both attention hooks and all secret-read
+rules. On Linux without `bubblewrap`, it first checked fail-closed startup,
+then used `--sandbox off` only for discovery. Actual sandbox enforcement,
+Grok specialist execution, and desktop notification delivery remain unverified.
+Codex's debug prompt input showed the rules, one persona, and all twelve skills;
+all three generated
 Codex profiles parsed as TOML. Actual specialist execution and interactive
 Claude discovery remain unverified. OpenCode, Copilot, Gemini, and Amp were not
 installed on the validation machine, so their runtime discovery is unverified.
@@ -279,7 +375,7 @@ dotfiles/
 ├── install.sh          # Installer options and task order
 ├── install/
 │   ├── common.sh       # Shared file helpers
-│   ├── agent-config.sh # JSON merges and Codex TOML defaults
+│   ├── agent-config.sh # JSON merges and native TOML defaults
 │   ├── packages.sh     # Package installation
 │   ├── shell.sh        # Dotfile links and shell setup
 │   └── agents.sh       # Per-tool agent adapters
@@ -290,6 +386,7 @@ dotfiles/
 ├── .opencode/          # Native settings and metadata templates
 ├── .codex/             # Native TOML defaults
 ├── .copilot/agents/    # Native specialist metadata
+├── .grok/              # Native defaults, statusline, attention hooks, and templates
 └── tests/              # Isolated installer checks
 ```
 

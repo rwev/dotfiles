@@ -7,8 +7,41 @@ import unittest
 import json
 import tomllib
 import shutil
+import shlex
 
 ROOT = Path(__file__).resolve().parents[1]
+GROK_DEFAULTS = {
+    'models': {'default_reasoning_effort': 'high'},
+    'memory': {'enabled': False},
+    'memory_v2': {'enabled': False},
+    'ui': {'screen_mode': 'fullscreen', 'theme': 'dark',
+           'status_line': {'type': 'command', 'command': '~/.grok/statusline.sh'}},
+    'toolset': {'ask_user_question': {'timeout_secs': 600}},
+    'subagents': {'enabled': True},
+    'features': {'active_agent_messages': True, 'subagent_model_inheritance': True},
+    'sandbox': {'profile': 'workspace'},
+    'compat': {'claude': {'agents': False}},
+    'permission': {'deny': [
+        'Read(**/.env)', 'Read(**/.env.*)', 'Read(secrets/**)',
+        'Read(**/*.pem)', 'Read(**/*.key)', 'Read(**/id_rsa)',
+        'Read(**/id_ed25519)', 'Read(**/credentials.json)',
+        'Read(**/.ssh/**)', 'Read(**/.aws/credentials)',
+    ]},
+}
+
+
+def grok_defaults_with(overrides):
+    defaults = json.loads(json.dumps(GROK_DEFAULTS))
+
+    def merge(base, local):
+        for key, value in local.items():
+            if isinstance(value, dict) and isinstance(base.get(key), dict):
+                merge(base[key], value)
+            else:
+                base[key] = value
+
+    merge(defaults, overrides)
+    return defaults
 
 
 class InstallerTests(unittest.TestCase):
@@ -19,7 +52,7 @@ class InstallerTests(unittest.TestCase):
         self.home.mkdir()
         self.env = {k: v for k, v in os.environ.items() if k not in {
             'CLAUDE_CONFIG_DIR', 'CODEX_HOME', 'COPILOT_HOME', 'XDG_CONFIG_HOME',
-            'GEMINI_CLI_HOME', 'XDG_DATA_HOME'}}
+            'GEMINI_CLI_HOME', 'GROK_HOME', 'XDG_DATA_HOME'}}
         self.env['HOME'] = str(self.home)
         self.root = ROOT
 
@@ -58,6 +91,7 @@ class InstallerTests(unittest.TestCase):
         self.install()
         self.assertEqual(before, self.snapshot())
         self.assertFalse((self.home / '.zshrc').exists())
+        self.assertFalse((self.home / '.grok').exists())
         self.assertFalse((self.home / '.copilot/config.json').exists())
         self.assertEqual(json.loads((self.home / '.claude/settings.json').read_text()),
                          json.loads((ROOT / '.claude/settings.json').read_text()))
@@ -100,6 +134,421 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(result.stdout, str(self.home / 'claude/statusline.sh'))
         self.assertEqual(result.stderr, '')
         self.assertTrue((self.home / 'gemini-root/.gemini/skills/my-test/SKILL.md').is_file())
+
+    def test_grok_opt_in_and_idempotent(self):
+        self.install('--tools=grok')
+        grok = self.home / '.grok'
+        instructions = (grok / 'AGENTS.md').read_text()
+        self.assertIn('Global rules', instructions)
+        self.assertEqual(instructions.count('## Address'), 1)
+        self.assertNotIn('Unsupported workflows', instructions)
+        self.assertIn('Supply the full diff and test results', instructions)
+        self.assertIn('cannot run git or tests', instructions)
+        self.assertEqual(tomllib.loads((grok / 'config.toml').read_text()),
+                         GROK_DEFAULTS)
+        read_tools = {'read_file', 'grep', 'list_dir', 'todo_write'}
+        for role in ['implementer', 'reviewer', 'security-reviewer']:
+            name = '_my-' + role
+            text = (grok / 'agents' / (name + '.md')).read_text()
+            _, header, body = text.split('---', 2)
+            metadata = dict(line.split(': ', 1) for line in header.strip().splitlines())
+            self.assertEqual(metadata['name'], name)
+            expected_tools = read_tools | {'search_replace', 'bash'} if role == 'implementer' else read_tools
+            self.assertEqual(set(metadata['tools'].split(', ')), expected_tools)
+            if role != 'implementer':
+                self.assertEqual(set(metadata['disallowedTools'].split(', ')), {'search_tool', 'use_tool'})
+                self.assertEqual(metadata['mcpInheritance'], 'none')
+                self.assertIn('full diff and test results', metadata['description'])
+                self.assertIn('cannot run git or tests', body)
+                self.assertIn('request the missing context', body)
+            shared_body = (ROOT / '.agents/agents' / (name + '.md')).read_text().split('---', 2)[2]
+            self.assertTrue(body.endswith(shared_body.lstrip('\n')))
+        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 12)
+        self.assertFalse((grok / 'skills').exists())
+        for name in ['statusline.sh', 'notify.sh']:
+            self.assertTrue((grok / name).is_symlink())
+            self.assertEqual((grok / name).resolve(), ROOT / '.grok' / name)
+        self.assertFalse((grok / 'hooks/notifications.json').is_symlink())
+        self.assertEqual((grok / 'hooks/notifications.json').read_bytes(),
+                         (ROOT / '.grok/hooks/notifications.json').read_bytes())
+        self.assertTrue(os.access(grok / 'statusline.sh', os.X_OK))
+        self.assertTrue(os.access(grok / 'notify.sh', os.X_OK))
+        hooks = json.loads((grok / 'hooks/notifications.json').read_text())['hooks']
+        self.assertEqual(set(hooks), {'Notification'})
+        self.assertEqual({group['matcher'] for group in hooks['Notification']},
+                         {'idle_prompt', 'permission_prompt'})
+        for group in hooks['Notification']:
+            self.assertEqual(group['hooks'], [{'type': 'command', 'command': '../notify.sh'}])
+        self.assertFalse((self.home / '.claude').exists())
+        before = self.snapshot()
+        self.install('--tools=grok')
+        self.assertEqual(before, self.snapshot())
+
+    def test_grok_custom_home(self):
+        grok = self.home / 'custom grok'
+        self.env['GROK_HOME'] = str(grok)
+        self.install('--tools=grok')
+        self.assertTrue((grok / 'AGENTS.md').is_file())
+        self.assertTrue((grok / 'agents/_my-reviewer.md').is_file())
+        self.assertTrue((grok / 'config.toml').is_file())
+        self.assertFalse((grok / '.grok').exists())
+        self.assertFalse((grok / 'skills').exists())
+        self.assertFalse((self.home / '.grok').exists())
+        self.assertTrue((self.home / '.agents/skills/my-test/SKILL.md').is_file())
+
+    def test_grok_custom_home_statusline_command_is_shell_safe(self):
+        grok = self.home / "custom grok ' $dollars `ticks`"
+        self.env['GROK_HOME'] = str(grok)
+        for initial in [None, '[ui.status_line]\ntype = "command"\n']:
+            with self.subTest(initial=initial):
+                if initial is not None:
+                    (grok / 'config.toml').write_text(initial)
+                self.install('--tools=grok')
+                config = tomllib.loads((grok / 'config.toml').read_text())
+                command = config['ui']['status_line']['command']
+                self.assertEqual(shlex.split(command), [str(grok / 'statusline.sh')])
+                payload = json.dumps({'model': {'display_name': 'safe model'}})
+                result = subprocess.run(['sh', '-c', command], input=payload, env=self.env,
+                                        capture_output=True, text=True)
+                self.assertEqual((result.returncode, result.stdout, result.stderr),
+                                 (0, 'safe model', ''))
+                before = self.snapshot()
+                self.install('--tools=grok')
+                self.assertEqual(before, self.snapshot())
+        (grok / 'config.toml').write_text('[ui.status_line]\ntype = "builtin"\ncommand = "local command"\n')
+        self.install('--tools=grok')
+        self.assertEqual(tomllib.loads((grok / 'config.toml').read_text())['ui']['status_line'],
+                         {'type': 'builtin', 'command': 'local command'})
+
+    def test_grok_preserves_custom_notification_hook_and_external_target(self):
+        grok = self.home / '.grok'
+        hooks = grok / 'hooks'
+        hooks.mkdir(parents=True)
+        external = self.home / 'external-hook.json'
+        content = '{"hooks":{"Notification":[]}}\n'
+        external.write_text(content)
+        destination = hooks / 'notifications.json'
+        destination.symlink_to(external)
+        (hooks / 'custom.json').write_text(content)
+        self.install('--tools=grok')
+        self.assertFalse(destination.is_symlink())
+        self.assertTrue((hooks / 'notifications.json.bak').is_symlink())
+        self.assertEqual(external.read_text(), content)
+        self.assertEqual((hooks / 'custom.json').read_text(), content)
+        before = self.snapshot()
+        self.install('--tools=grok')
+        self.assertEqual(before, self.snapshot())
+
+    def test_grok_unknown_hook_directory_link_is_not_written_through(self):
+        grok = self.home / '.grok'
+        grok.mkdir()
+        outside = self.home / 'outside'
+        outside.mkdir()
+        (outside / 'sentinel').write_text('untouched\n')
+        (grok / 'hooks').symlink_to(outside)
+        result = self.install('--tools=grok', ok=False)
+        self.assertIn('Refusing to write through directory symlink', result.stderr)
+        self.assertEqual({p.name for p in outside.iterdir()}, {'sentinel'})
+        self.assertEqual((outside / 'sentinel').read_text(), 'untouched\n')
+
+    def test_grok_dry_run(self):
+        self.install('--tools=grok', '--dry-run')
+        self.assertEqual(self.snapshot(), {})
+        self.install('--tools=grok')
+        before = self.snapshot()
+        self.install('--tools=grok', '--dry-run')
+        self.assertEqual(before, self.snapshot())
+
+    def test_grok_preserves_local_instructions_config_and_runtime(self):
+        grok = self.home / '.grok'
+        grok.mkdir()
+        (grok / 'AGENTS.md').write_text('existing Grok instructions\n')
+        (grok / 'AGENTS.local.md').write_text('local Grok instructions\n')
+        runtime = {}
+        for path in ['auth.json', 'sessions/session.json', 'cache/data', 'agents/custom.md',
+                     'skills/custom/SKILL.md', 'hooks/custom.json']:
+            target = grok / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text('placeholder local content\n')
+            runtime[target] = target.read_bytes()
+        config = 'model = "local-choice"\n[compat.claude]\nagents = true\nskills = false\n'
+        (grok / 'config.toml').write_text(config)
+        self.install('--tools=claude,grok')
+        self.assertEqual(tomllib.loads((grok / 'config.toml').read_text()),
+                         grok_defaults_with(tomllib.loads(config)))
+        instructions = (grok / 'AGENTS.md').read_text()
+        self.assertIn('existing Grok instructions', instructions)
+        self.assertIn('local Grok instructions', instructions)
+        self.assertEqual((grok / 'AGENTS.md.bak').read_text(), 'existing Grok instructions\n')
+        for path, content in runtime.items():
+            self.assertEqual(path.read_bytes(), content)
+        before = self.snapshot()
+        self.install('--tools=claude,grok')
+        self.assertEqual(before, self.snapshot())
+
+    def test_grok_adds_only_missing_defaults(self):
+        grok = self.home / '.grok'
+        grok.mkdir()
+        config = 'model = "local-choice"\n[compat.claude]\nskills = false\nhooks = true\n[ui]\ntheme = "local"\n'
+        (grok / 'config.toml').write_text(config)
+        self.install('--tools=grok')
+        expected = grok_defaults_with(tomllib.loads(config))
+        self.assertEqual(tomllib.loads((grok / 'config.toml').read_text()), expected)
+        before = self.snapshot()
+        self.install('--tools=grok')
+        self.assertEqual(before, self.snapshot())
+
+    def test_grok_preserves_all_local_runtime_defaults(self):
+        grok = self.home / '.grok'
+        grok.mkdir()
+        config = '\n'.join([
+            'model = "local-choice"',
+            '[models]', 'default_reasoning_effort = "low"',
+            '[memory]', 'enabled = true', '[memory_v2]', 'enabled = true',
+            '[ui]', 'screen_mode = "minimal"', 'theme = "local"',
+            'permission_mode = "ask"',
+            '[ui.status_line]', 'type = "disabled"', 'command = "local-script"',
+            '[toolset.ask_user_question]', 'timeout_secs = 120',
+            '[subagents]', 'enabled = false',
+            '[features]', 'active_agent_messages = false',
+            'subagent_model_inheritance = false',
+            '[sandbox]', 'profile = "read-only"',
+            '[compat.claude]', 'agents = true',
+            '[permission]', 'deny = [', '  "Read(local/**)",', ']', '',
+        ])
+        (grok / 'config.toml').write_text(config)
+        self.install('--tools=grok')
+        self.assertEqual((grok / 'config.toml').read_text(), config)
+        before = self.snapshot()
+        self.install('--tools=grok')
+        self.assertEqual(before, self.snapshot())
+
+    def test_grok_multiline_deny_insertion(self):
+        grok = self.home / '.grok'
+        grok.mkdir()
+        config = '[permission]\nallow = ["Bash(cargo test *)"]\n[ui]\ntheme = "local"\n'
+        (grok / 'config.toml').write_text(config)
+        self.install('--tools=grok')
+        self.assertEqual(tomllib.loads((grok / 'config.toml').read_text()),
+                         grok_defaults_with(tomllib.loads(config)))
+        before = self.snapshot()
+        self.install('--tools=grok')
+        self.assertEqual(before, self.snapshot())
+
+    def test_grok_preserves_alternate_runtime_syntax(self):
+        grok = self.home / '.grok'
+        grok.mkdir()
+        configs = [
+            'ui = { theme = "local" }\n',
+            'ui.theme = "local"\n',
+            '["ui"]\ntheme = "local"\n',
+            '[ui]\n"\\u0074heme" = "local"\n',
+            '[toolset]\nask_user_question = { timeout_secs = 120 }\n',
+            '[toolset]\nask_user_question.timeout_secs = 120\n',
+            'toolset.ask_user_question = { timeout_secs = 120 }\n',
+            'memory = false\n',
+            '[toolset]\nask_user_question = false\n',
+            'note = """\n[ui]\ntheme = "local"\n"""\n',
+            'note = """unterminated\n[ui]\n',
+            '[ui\ntheme = "local"\n',
+        ]
+        for config in configs:
+            with self.subTest(config=config):
+                (grok / 'config.toml').write_text(config)
+                self.install('--tools=grok')
+                self.assertEqual((grok / 'config.toml').read_text(), config)
+                before = self.snapshot()
+                self.install('--tools=grok')
+                self.assertEqual(before, self.snapshot())
+
+    def test_grok_preserves_multiline_strings_inside_arrays(self):
+        grok = self.home / '.grok'
+        grok.mkdir()
+        config = grok / 'config.toml'
+        external = self.home / 'external.toml'
+        for delimiter in ['"""', "'" * 3]:
+            for linked in [False, True]:
+                with self.subTest(delimiter=delimiter, linked=linked):
+                    original = ('[custom]\nnotes = [' + delimiter +
+                                '\n[ui]\n[other]\nkeep this text\n' + delimiter + ']\n').encode()
+                    if config.exists() or config.is_symlink():
+                        config.unlink()
+                    if linked:
+                        external.write_bytes(original)
+                        config.symlink_to(external)
+                    else:
+                        config.write_bytes(original)
+                    self.install('--tools=grok')
+                    self.assertEqual(config.read_bytes(), original)
+                    self.assertEqual(config.is_symlink(), linked)
+                    self.assertEqual(list(grok.glob('config.toml.bak*')), [])
+                    if linked:
+                        self.assertEqual(external.read_bytes(), original)
+                    before = self.snapshot()
+                    self.install('--tools=grok')
+                    self.assertEqual(before, self.snapshot())
+
+    def test_toml_default_preserves_literal_paths(self):
+        config = self.home / 'config.toml'
+        config.write_text('[ui]\ntheme = "local"\n')
+        literal_path = str(self.home / r'folder\name')
+        line = 'command = ' + json.dumps(literal_path)
+        result = subprocess.run([
+            'bash', '-c',
+            'source "$1"; codex_insert_default "$2" ui "$3"',
+            'test-default', str(ROOT / 'install/agent-config.sh'), str(config), line,
+        ], env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(tomllib.loads(result.stdout),
+                         {'ui': {'theme': 'local', 'command': literal_path}})
+        self.assertEqual(config.read_text(), '[ui]\ntheme = "local"\n')
+
+    def test_grok_shell_aliases(self):
+        aliases = '\n'.join(line for line in (ROOT / '.zshrc').read_text().splitlines()
+                            if line.startswith('alias gr'))
+        result = subprocess.run(['zsh', '-f', '-c', aliases + '\nalias grk grkc grkr'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), [
+            "grk='grok --always-approve'",
+            "grkc='grok --continue --always-approve'",
+            "grkr='grok --resume --always-approve'",
+        ])
+
+    def test_grok_preserves_alternate_compat_syntax(self):
+        grok = self.home / '.grok'
+        grok.mkdir()
+        for config in ['compat.claude.agents = true\n',
+                       '"compat".claude.agents = true\n',
+                       '[compat]\nclaude = { agents = true, skills = false }\n',
+                       '["compat"."claude"]\nagents = true\n',
+                       '["\\u0063ompat".claude]\nagents = true\n',
+                       '"\\u0063ompat".claude.agents = true\n',
+                       'compat."\\u0063laude".agents = true\n',
+                       '[compat.claude]\n"\\u0061gents" = true\n',
+                       '[compat.claude]\n"agents" = true\n']:
+            with self.subTest(config=config):
+                (grok / 'config.toml').write_text(config)
+                self.install('--tools=grok')
+                self.assertEqual((grok / 'config.toml').read_text(), config)
+                self.assertEqual(tomllib.loads(config)['compat']['claude']['agents'], True)
+                before = self.snapshot()
+                self.install('--tools=grok')
+                self.assertEqual(before, self.snapshot())
+
+    def test_grok_escaped_config_names_preserve_symlink(self):
+        grok = self.home / '.grok'
+        grok.mkdir()
+        external = self.home / 'external.toml'
+        original = '["\\u0063ompat".claude]\nagents = true\n'
+        external.write_text(original)
+        config = grok / 'config.toml'
+        config.symlink_to(external)
+        self.install('--tools=grok')
+        self.assertTrue(config.is_symlink())
+        self.assertEqual(external.read_text(), original)
+        self.assertEqual(config.read_text(), original)
+        self.assertEqual(list(grok.glob('config.toml.bak*')), [])
+        before = self.snapshot()
+        self.install('--tools=grok')
+        self.assertEqual(before, self.snapshot())
+
+    def test_grok_config_symlink_preserves_external_content(self):
+        grok = self.home / '.grok'
+        grok.mkdir()
+        external = self.home / 'external.toml'
+        original = 'model = "local-choice"\n[compat.claude]\nskills = false\n'
+        external.write_text(original)
+        config = grok / 'config.toml'
+        config.symlink_to(external)
+        self.install('--tools=grok')
+        self.assertEqual(external.read_text(), original)
+        self.assertFalse(config.is_symlink())
+        self.assertTrue((grok / 'config.toml.bak').is_symlink())
+        self.assertEqual(tomllib.loads(config.read_text())['compat']['claude'],
+                         {'skills': False, 'agents': False})
+        original = config.read_text().replace('agents = false', 'agents = true')
+        external.write_text(original)
+        config.unlink()
+        config.symlink_to(external)
+        self.install('--tools=grok')
+        self.assertTrue(config.is_symlink())
+        self.assertEqual(external.read_text(), original)
+
+    def test_grok_unknown_directory_links_are_not_written_through(self):
+        outside = self.home / 'outside'
+        outside.mkdir()
+        (outside / 'sentinel').write_text('untouched\n')
+        grok = self.home / '.grok'
+        grok.symlink_to(outside)
+        result = self.install('--tools=grok', ok=False)
+        self.assertIn('Refusing to write through directory symlink', result.stderr)
+        self.assertEqual({p.name for p in outside.iterdir()}, {'sentinel'})
+        grok.unlink()
+        grok.mkdir()
+        (grok / 'agents').symlink_to(outside)
+        result = self.install('--tools=grok', ok=False)
+        self.assertIn('Refusing to write through directory symlink', result.stderr)
+        self.assertEqual({p.name for p in outside.iterdir()}, {'sentinel'})
+        self.assertEqual((outside / 'sentinel').read_text(), 'untouched\n')
+
+    @unittest.skipUnless(shutil.which('grok'), 'Grok CLI is not installed')
+    def test_grok_native_discovery(self):
+        cwd = Path(self.tmp.name) / 'project'
+        cwd.mkdir()
+        for custom in [False, True]:
+            with self.subTest(custom_home=custom):
+                if custom:
+                    self.env['GROK_HOME'] = str(self.home / 'custom grok')
+                self.install('--tools=claude,grok')
+                env = {k: v for k, v in self.env.items() if not k.startswith('GROK_')}
+                if custom:
+                    env['GROK_HOME'] = self.env['GROK_HOME']
+                for env_override in [False, True]:
+                    if env_override:
+                        env['GROK_CLAUDE_AGENTS_ENABLED'] = 'false'
+                    command = [shutil.which('grok'), 'inspect', '--json']
+                    result = subprocess.run(command, env=env, cwd=cwd,
+                                            capture_output=True, text=True, timeout=30)
+                    if result.returncode != 0:
+                        self.assertEqual(result.stderr,
+                                         'error: this sandbox could not enforce its deny list on Linux: '
+                                         'bwrap exec failed: No such file or directory (os error 2). '
+                                         'Install bubblewrap with `apt install -y bubblewrap`. '
+                                         'Refusing to start with denied paths unprotected.\n')
+                        self.assertEqual(result.stdout, '')
+                        # Check discovery only after verifying fail-closed sandbox startup.
+                        command[1:1] = ['--sandbox', 'off']
+                        result = subprocess.run(command, env=env, cwd=cwd,
+                                                capture_output=True, text=True, timeout=30)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    report = json.loads(result.stdout)
+                    self.assertTrue({'_my-implementer', '_my-reviewer', '_my-security-reviewer'} <=
+                                    {agent['name'] for agent in report['agents']})
+                    self.assertTrue({p.name for p in (ROOT / '.agents/skills').iterdir()} <=
+                                    {skill['name'] for skill in report['skills']})
+                    active = [entry for entry in report['projectInstructions'] if not entry.get('disabled')]
+                    paths = [entry['path'] for entry in active]
+                    grok = Path(self.env.get('GROK_HOME', self.home / '.grok'))
+                    self.assertEqual(tomllib.loads((grok / 'config.toml').read_text())['sandbox'],
+                                     {'profile': 'workspace'})
+                    self.assertGreaterEqual(report['permissions']['loaded'],
+                                            len(GROK_DEFAULTS['permission']['deny']))
+                    self.assertEqual(report['permissions']['skipped'], [])
+                    hooks = [hook for hook in report['hooks'] if hook['event'] == 'notification']
+                    self.assertEqual({hook['matcher'] for hook in hooks},
+                                     {'idle_prompt', 'permission_prompt'})
+                    self.assertTrue(all(hook['hookType'] == 'command' and
+                                        hook['target'] == '../notify.sh' and
+                                        hook['source']['path'] == str(grok / 'hooks')
+                                        for hook in hooks))
+                    self.assertIn(str(grok / 'config.toml') + ' (config)',
+                                  report['permissions']['sources'])
+                    self.assertIn(str(grok / 'AGENTS.md'), paths)
+                    self.assertNotIn(str(self.home / '.claude/CLAUDE.md'), paths)
+                    instructions = '\n'.join(Path(path).read_text() for path in paths)
+                    self.assertEqual(instructions.count('# Global rules'), 1)
+                    self.assertEqual(instructions.count('## Address'), 1)
 
     def test_overrides_and_migration(self):
         codex = self.home / '.codex'

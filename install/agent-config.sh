@@ -91,7 +91,8 @@ codex_config_has_key() {
 }
 
 codex_insert_default() {
-  awk -v section="$2" -v line="$3" '
+  DOTFILES_TOML_DEFAULT="$3" awk -v section="$2" '
+    BEGIN { line = ENVIRON["DOTFILES_TOML_DEFAULT"] }
     /^[[:space:]]*\[[^]]+\][[:space:]]*(#.*)?$/ {
       table = $0
       sub(/^[[:space:]]*\[/, "", table)
@@ -155,5 +156,102 @@ install_codex_config() {
       return 1
     fi
     mv "$tmp" "$dest"
+  done < "$src"
+}
+
+# The bare-table helpers cannot safely merge alternate TOML forms.
+grok_config_can_add_defaults() {
+  awk '
+    FNR == NR {
+      if ($0 ~ /^\[[a-z_][a-z_0-9.]*\]$/) {
+        table = substr($0, 2, length($0) - 2)
+        defaults[table] = 1
+      }
+      next
+    }
+    /^[[:space:]]*\[/ {
+      if ($0 !~ /^[[:space:]]*\[[a-z_][a-z_0-9]*(\.[a-z_][a-z_0-9]*)*\][[:space:]]*(#.*)?$/) unsafe = 1
+      section = $0
+      sub(/^[[:space:]]*\[/, "", section)
+      sub(/\].*$/, "", section)
+      next
+    }
+    /"""|\047\047\047/ { unsafe = 1 }
+    /^[^=]*["\047][^=]*=/ { unsafe = 1 }
+    /^[[:space:]]*[a-z_][a-z_0-9.[:space:]]*=/ {
+      key = $0
+      sub(/=.*/, "", key)
+      gsub(/[[:space:]]/, "", key)
+      if (index(key, ".")) unsafe = 1
+      value = $0
+      sub(/^[^=]*=[[:space:]]*/, "", value)
+      if (value ~ /^\{/) unsafe = 1
+      path = section == "" ? key : section "." key
+      for (table in defaults) {
+        if (path == table || index(table, path ".") == 1) unsafe = 1
+      }
+    }
+    END { exit unsafe }
+  ' "$2" "$1"
+}
+
+install_grok_config() {
+  local dest="$1" src="$DOTFILES_DIR/.grok/config.toml" tmp section="" key line continuation status_command="" command_path
+  if [[ "$GROK_DIR" != "$HOME/.grok" ]]; then
+    command_path="$GROK_DIR/statusline.sh"
+    command_path="${command_path//\'/\'\\\'\'}"
+    status_command="$(printf "'%s'" "$command_path" | jq -Rs .)" || return
+  fi
+  ensure_directory "$(dirname "$dest")"
+  if [[ ! -e "$dest" && ! -L "$dest" ]]; then
+    info "Installing $dest"
+    if [[ -z "$status_command" ]]; then
+      run cp "$src" "$dest"
+    elif ! $DRY_RUN; then
+      tmp="$(mktemp "${dest}.tmp.XXXXXX")" || return
+      if ! GROK_STATUS_COMMAND="$status_command" awk '
+        $0 == "command = \"~/.grok/statusline.sh\"" { print "command = " ENVIRON["GROK_STATUS_COMMAND"]; next }
+        { print }
+      ' "$src" > "$tmp"; then
+        rm "$tmp"
+        return 1
+      fi
+      mv "$tmp" "$dest" || { rm "$tmp"; return 1; }
+    fi
+    return
+  fi
+  [[ -f "$dest" ]] || { error "Not a config file: $dest"; return 1; }
+  if ! grok_config_can_add_defaults "$dest" "$src"; then
+    warn "Preserving alternate Grok TOML syntax; add missing tracked defaults locally"
+    return
+  fi
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^\[([a-z_][a-z_0-9.]*)\]$ ]]; then
+      section="${BASH_REMATCH[1]}"
+      continue
+    fi
+    [[ "$line" =~ ^([a-z_][a-z_0-9]*)[[:space:]]*= ]] || continue
+    key="${BASH_REMATCH[1]}"
+    if [[ "$line" =~ =[[:space:]]*\[[[:space:]]*$ ]]; then
+      while IFS= read -r continuation; do
+        line+=$'\n'"$continuation"
+        [[ "$continuation" =~ ^[[:space:]]*\][[:space:]]*$ ]] && break
+      done
+    fi
+    codex_config_has_key "$dest" "$section" "$key" && continue
+    if [[ "$section" == ui.status_line && "$key" == command && -n "$status_command" ]]; then
+      line="command = $status_command"
+    fi
+    info "Adding Grok default $section.$key to $dest"
+    $DRY_RUN && continue
+    tmp="$(mktemp "${dest}.tmp.XXXXXX")"
+    if ! codex_insert_default "$dest" "$section" "$line" > "$tmp"; then
+      rm "$tmp"
+      return 1
+    fi
+    if [[ -L "$dest" ]]; then
+      backup_file "$dest" || { rm "$tmp"; return 1; }
+    fi
+    mv "$tmp" "$dest" || { rm "$tmp"; return 1; }
   done < "$src"
 }
