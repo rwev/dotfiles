@@ -25,13 +25,16 @@ sandbox or a substitute for native permissions.
 
 1. Give it the target (diff range, or the file(s)/feature named) — it has no
    other context, so include anything it needs to know about what changed
-   and why. It runs its own category walk (injection, auth, secrets, input
+   and why. Within its scope, it checks categories (injection, auth, secrets, input
    validation, output handling, crypto, dependencies, configuration).
 2. Relay its findings as-is: `file:line`, exploit scenario, severity, and
    its final verdict (`Ship as-is` / `Ship with fixes` / `Do not ship`).
 3. Do not apply fixes yourself unless I explicitly ask — its report
    describes them; wait for my go-ahead before touching anything.
 
-For a large or whole-repo audit, it's fine to dispatch more than one pass —
-e.g. one per category cluster — and merge the findings, rather than expecting
-a single agent to hold the entire surface at once.
+For a large audit, use parallel reviewers for distinct target clusters or
+independent questions when useful. Follow
+[Scheduling](../my-build/references/progress.md#scheduling); avoid overlapping
+audits and keep evidence stable. As coordinator, merge findings and check
+cross-boundary auth and dataflow coverage. Standalone audits need no build
+run artifacts.

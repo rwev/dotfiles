@@ -28,9 +28,13 @@ when native messaging is available; it owns state and shared knowledge.
    framework in place, verify by running the code and inspecting the output
    instead of skipping verification — and note the missing test infra as a
    concern in your report.
-3. Run the project's broader test suite once, if one is findable. Don't merge
-   or leave it broken.
-4. Commit only if the user explicitly authorized commits. Use a concise
+3. Run the project's broader test suite once, if one is findable. In a
+   coordinated batch, leave required broad/shared checks to the coordinator
+   after writers join. Run focused checks only within supplied resource limits.
+   Report deferred checks; do not treat them as passed or leave failures hidden.
+4. In parallel batches, do not stage, commit, checkout, branch, reset, or stash;
+   the coordinator owns authorized commits after writers stop and review approves.
+   Otherwise commit only if the user explicitly authorized commits. Use a concise
    conventional-commit message scoped to this task. Otherwise leave changes
    uncommitted and report the changed files for working-diff review.
 
@@ -38,8 +42,9 @@ when native messaging is available; it owns state and shared knowledge.
 
 - Match the surrounding code's style and reuse existing helpers/patterns —
   don't introduce new approaches the codebase doesn't already use.
-- Stay in scope: don't touch files outside this task, don't add unrequested
-  features "while you're in there."
+- Stay within supplied write paths and resource claims, including generated
+  files and fixtures. You are not alone; do not overwrite or revert peer changes.
+  Ask the coordinator to reassign any expanded scope before writing it.
 - Don't add comments that restate the code; only non-obvious "why".
 - Never commit secrets, credentials, or tokens, including ones generated for
   local testing — use placeholders instead.

@@ -1,22 +1,10 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "agentPushNotifEnabled": true,
-  "askUserQuestionTimeout": "10m",
+  "cleanupPeriodDays": 30,
   "attribution": {
     "commit": "",
     "pr": ""
   },
-  "autoMemoryEnabled": false,
-  "autoUpdatesChannel": "latest",
-  "awaySummaryEnabled": true,
-  "cleanupPeriodDays": 30,
-  "effortLevel": "high",
-  "enableArtifact": false,
-  "enabledPlugins": {
-    "superpowers@claude-plugins-official": true
-  },
-  "model": "opusplan",
-  "outputStyle": "my-humble-servant",
   "permissions": {
     "deny": [
       "Read(./.env)",
@@ -31,31 +19,41 @@
       "Read(./**/credentials.json)"
     ]
   },
-  "remoteControlAtStartup": true,
+  "model": "opusplan",
+  "worktree": {
+    "baseRef": "fresh"
+  },
+  "enableArtifact": false,
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh"
+  },
+  "enabledPlugins": {},
+  "outputStyle": "my-humble-servant",
   "sandbox": {
+    "enabled": true,
     "credentials": {
       "files": [
         {
-          "mode": "deny",
-          "path": "~/.ssh"
+          "path": "~/.ssh",
+          "mode": "deny"
         },
         {
-          "mode": "deny",
-          "path": "~/.aws/credentials"
+          "path": "~/.aws/credentials",
+          "mode": "deny"
         }
       ]
-    },
-    "enabled": true
+    }
   },
-  "skipDangerousModePermissionPrompt": true,
-  "statusLine": {
-    "command": "~/.claude/statusline.sh",
-    "type": "command"
-  },
-  "theme": "dark",
+  "effortLevel": "high",
+  "awaySummaryEnabled": true,
+  "askUserQuestionTimeout": "10m",
+  "autoUpdatesChannel": "latest",
   "tui": "fullscreen",
-  "useAutoModeDuringPlan": true,
-  "worktree": {
-    "baseRef": "fresh"
-  }
+  "autoMemoryEnabled": false,
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "dark",
+  "remoteControlAtStartup": true,
+  "agentPushNotifEnabled": true,
+  "useAutoModeDuringPlan": true
 }

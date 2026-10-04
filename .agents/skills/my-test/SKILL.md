@@ -12,7 +12,10 @@ Run the tests relevant to the current change.
 1. Detect the test setup from the project (e.g. package.json scripts, pyproject/pytest,
    cargo, go, Makefile). Don't assume — check what this repo actually uses. If the
    repo has more than one suite (e.g. separate frontend/backend), run the ones
-   relevant to what changed in each.
+   relevant to what changed in each. Parallelize only when inputs and mutable
+   resources are safe or isolated; otherwise run serially. Follow
+   [Scheduling](../my-build/references/progress.md#scheduling). Standalone test
+   runs need no build run artifacts.
 2. If the user named a specific test or path, focus there and run it directly.
    Otherwise run the tests covering the files changed in the working tree; fall
    back to the full suite if scoping is unclear. A full-suite run can produce a

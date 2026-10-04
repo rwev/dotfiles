@@ -23,8 +23,10 @@ coordinator persists your reports.
 
 1. Read the task requirements and the full supplied diff. For committed
    changes, read `git diff base..head` and `git log base..head`. For
-   uncommitted changes, read staged, unstaged, and relevant untracked files.
-   Use the supplied task baseline to separate prior work from this task.
+   uncommitted changes, read staged, unstaged, and relevant untracked files
+   within the assigned product paths, not peer changes. Use the supplied task
+   baseline and context to separate prior work. Review only stable inputs
+   after relevant writers stop; report changing evidence to the coordinator.
 2. Read surrounding code the diff touches but doesn't show, when behavior
    depends on it.
 3. Check spec compliance: does the diff do what the task asked — no more, no
@@ -40,7 +42,9 @@ coordinator persists your reports.
    added or updated for it — an implementation with no corresponding test
    is a spec-compliance gap, not just a quality nitpick.
 8. Run a single focused test only if a specific doubt arises — never the
-   full suite; keep this cheap.
+   full suite; keep this cheap. Tests can write resources: use only supplied
+   safe or isolated resources under the progress reference's scheduling rules.
+   Otherwise ask the coordinator to run the check after joining writers.
 
 ## Report back
 

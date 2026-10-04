@@ -6,6 +6,9 @@
 .claude/**/*.local.json
 .claude/skills/synced/
 
+# Agent runtime progress
+.agents/work/
+
 # macOS
 .DS_Store
 

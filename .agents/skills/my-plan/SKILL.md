@@ -28,14 +28,17 @@ validate relevant cards before trusting them.
 If writes are prohibited, return an artifact-ready plan and distilled
 exploration handoff for `my-build` to persist at startup.
 
-1. Resume the recorded native explorer when available. Otherwise follow
-   the recovery rules before dispatching a replacement. For a new run,
-   dispatch a native exploration subagent with the full task context to
-   investigate the codebase and report
+1. Use a narrowly scoped native explorer; add others for useful independent
+   questions. Follow
+   [Scheduling](../my-build/references/progress.md#scheduling) for distinct
+   questions and stable evidence; do not repeat an investigation. Resume the
+   recorded explorer for each scope. Follow recovery rules before replacement.
+   Give each explorer the full task context and its scope. Have it report
    back how it currently works: real `file:line` locations, existing
    patterns/utilities to reuse. Keep the raw search/read noise out of your
    own context; work from its distilled report for the rest of this process.
-   Record its native ID immediately when writes are allowed. Persist
+   Record each scope and native ID immediately when writes are allowed. Reuse
+   that agent for related follow-ups. As coordinator, persist
    important discoveries and their source fingerprints as they arise,
    before final handoff.
 2. Enumerate every open decision the task leaves unresolved — including ones

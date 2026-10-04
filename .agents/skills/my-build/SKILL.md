@@ -19,7 +19,8 @@ Commit only if the user explicitly authorized commits. Otherwise keep all
 tasks uncommitted and review their working diffs, including untracked product
 files. Follow [durable progress](references/progress.md) for run artifacts,
 checkpoint ownership, baselines, knowledge validation, and native recovery.
-Read that reference before starting or resuming work.
+Read that reference before starting or resuming work. Use its
+[Scheduling](references/progress.md#scheduling) rules for parallel batches.
 
 1. Load a linked or unambiguous matching run before replanning. Reconcile
    its state with actual files and native agents. Reuse its scope, decisions,
@@ -57,15 +58,17 @@ Read that reference before starting or resuming work.
    and task status in `state.md`. Then create one task-list item per task.
    Use the native task tool when available; otherwise track it in conversation.
 5. Continue at the first unfinished phase. Skip completed tasks only when
-   their evidence is still valid. Work in order, never in parallel; agents
-   share the working tree.
-   a. Mark it in-progress in state. Capture its original baseline once:
-      current SHA, staged and unstaged patches, and relevant pre-existing
-      untracked evidence. Exclude runtime artifacts and secrets.
-      Resume its existing `_my-implementer` if one is recorded. Otherwise
+   their evidence is still valid. Select dependency-ready batches under the
+   scheduling rules. Persist each task's phases, claims, and fix attempts in state.
+   a. Mark selected tasks in-progress in state. Before any batch writer starts,
+      capture each original baseline once: current SHA, staged and unstaged
+      patches, and relevant pre-existing untracked evidence, scoped to its
+      owned product paths. Exclude runtime artifacts and secrets.
+      Resume each existing `_my-implementer` if recorded. Otherwise
       dispatch that role with the task text, constraints, approval and commit
       authorization, absolute run/checkpoint/progress-reference paths, and
-      relevant validated knowledge. Record its native ID immediately.
+      relevant validated knowledge, ownership, and resource limits. Record its
+      native ID immediately.
       Save phase checkpoints and merge important findings as work proceeds.
    b. If it reports `NEEDS_CONTEXT`, try to resolve it yourself first: check
       the scope/decisions log, research the codebase and conventions, and
@@ -75,29 +78,38 @@ Read that reference before starting or resuming work.
       genuine gap the planning phase missed — high-importance and hard to
       rework. If `BLOCKED`, stop and report what's blocking you — that's a
       technical failure, not a decision, so ask directly rather than guessing.
-   c. Resume the recorded reviewer for an interrupted review of the same
-      diff. For a new round or changed diff, dispatch a fresh `_my-reviewer`.
+   c. Join batch writers and freeze review inputs. Run required broad/shared
+      checks once for this stable batch. Resume the recorded reviewer for an
+      interrupted review of the same diff. For a new round or changed diff,
+      dispatch a fresh `_my-reviewer`.
       Supply the task text, constraints,
       approval, absolute run/checkpoint/progress-reference paths, relevant
       validated knowledge, and base..head SHA range if committed. Otherwise
-      supply the task baseline and all uncommitted product changes.
+      supply its baseline and staged, unstaged, and untracked product changes
+      scoped to its owned paths, plus relevant context. Review distinct tasks
+      in parallel only under the scheduling rules.
       Record its ID immediately. Persist its intermediate review checkpoints
       and discoveries; the reviewer must not write them itself. Always review,
       even trivial tasks — a small diff makes for a cheap review, and the discipline is
       what catches tasks that only looked trivial.
    d. On Critical or Important findings, resume the same `_my-implementer`
-      with the findings to fix, then re-review with a fresh reviewer. Apply
+      with the findings to fix, reacquire its claims, then join writers, rerun
+      required checks, and re-review with a fresh reviewer. Apply
       the progress reference's recovery gate before any replacement. Loop until
       Approved. If the same finding survives two fix attempts, stop and ask me rather than
       looping again — a third silent retry rarely fixes what two didn't.
    e. Save verification evidence and review verdict in the checkpoint and
-      state. Mark the task completed, then move to the next task.
+      state. Mark a task completed only after tests pass and review approves.
+      When commits are authorized, make them as coordinator under the
+      scheduling rules. Then release eligible dependent tasks.
 6. Don't pause between tasks to ask "should I continue?" — keep going until
    every task is done or you hit something genuinely blocked.
-7. When all tasks are done, resume an interrupted final review of the same
+7. When all tasks are done and writers have stopped, run full integration
+   verification. Resume an interrupted final review of the same
    diff, or dispatch a fresh `_my-reviewer` for a new round. Review the
-   full range (first task's base SHA to current `HEAD`) if committed.
-   Otherwise supply the first baseline and all uncommitted product changes.
+   full range (first task's base SHA to current `HEAD`) if committed, scoped
+   to the union of task-owned product paths. Otherwise supply original task
+   baselines and that union's staged, unstaged, and untracked changes.
    Include the same dispatch context as task reviews and record the ID.
    Run one broad pass over the complete work; resolve required findings
    through the same fix-and-review loop. Persist its status and verdict.

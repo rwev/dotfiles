@@ -29,6 +29,34 @@ capture, product diffs, untracked product discovery, review, and normal
 commit candidates. Stage explicit product paths only; never use broad
 `git add`. Do not restore baseline patches automatically.
 
+## Scheduling
+
+- Keep small tasks on one agent. Parallelize only distinct, independent work.
+- Before dispatch, record each task ID, goal, dependencies, real write paths
+  (including generated files, fixtures, and checkpoints), read dependencies,
+  and shared resources. Include Git index/HEAD, lockfiles, caches/build dirs,
+  databases, services, or ports when relevant.
+- Start only dependency-ready tasks. Prove no write/write or write/read
+  conflicts or overlapping mutable resource use. Otherwise serialize;
+  unresolved ownership or unapproved dependencies also require serialization.
+- Give each agent its ownership limits. Say it is not alone and must not
+  overwrite or revert peer changes. Reassign expanded scope only after the prior
+  claimant stops. Hold claims until agents and tool writers are confirmed stopped.
+- On resume, recover running or unknown agents before new dispatch.
+- Disjoint tasks may share a tree; do not create worktrees or change native
+  settings automatically. Parallel workers must not stage, commit, checkout,
+  branch, reset, or stash. The coordinator alone commits with authorization,
+  serially, after all writers stop and reviews approve.
+- Join and freeze batch writers before review or shared verification. Scope
+  task baselines/diffs to owned product paths and supplied context, not peer work.
+- Parallel read-only agents need distinct questions/targets and stable evidence;
+  they may read common immutable sources. Do not duplicate investigations.
+- Tests can write resources. Parallel focused tests need safe inputs/resources
+  or isolation. The coordinator runs broad/shared checks serially after joining;
+  share required verification once per stable batch, without skipping checks.
+- Approve tests and review before unlocking dependents. Apply the same claims
+  and gates to fixes; never overlap a review with writers on its evidence.
+
 ## Knowledge cards
 
 Record each finding's classification (confirmed, hypothesis, or rejected)
