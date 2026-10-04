@@ -18,13 +18,26 @@ Before scoping, check native subagent support. If unavailable, report
 `Unsupported: my-plan requires native subagents` and stop. Do not substitute
 inline exploration for the required subagent.
 
-Do NOT edit files or write code — this is scoping only.
+Do not edit product files or write code. When the harness permits writes,
+write only run artifacts under `.agents/work/`. Follow
+[durable progress](../my-build/references/progress.md) for run selection,
+checkpoints, and fingerprint-validated knowledge. Load a linked or
+unambiguous matching run before new exploration. Reuse its decisions and
+validate relevant cards before trusting them.
 
-1. Dispatch a native exploration subagent with the full task context to
+If writes are prohibited, return an artifact-ready plan and distilled
+exploration handoff for `my-build` to persist at startup.
+
+1. Resume the recorded native explorer when available. Otherwise follow
+   the recovery rules before dispatching a replacement. For a new run,
+   dispatch a native exploration subagent with the full task context to
    investigate the codebase and report
    back how it currently works: real `file:line` locations, existing
    patterns/utilities to reuse. Keep the raw search/read noise out of your
    own context; work from its distilled report for the rest of this process.
+   Record its native ID immediately when writes are allowed. Persist
+   important discoveries and their source fingerprints as they arise,
+   before final handoff.
 2. Enumerate every open decision the task leaves unresolved — including ones
    the master never raised or hinted at. Don't limit yourself to what was
    asked; actively hunt across each category:
@@ -65,7 +78,10 @@ Do NOT edit files or write code — this is scoping only.
 7. Once every decision is resolved, write the finalized scope: files that
    would change and what each needs, the decisions made — both the ones
    asked and the ones you made autonomously, with reasons — and an ordered
-   step list ready to hand to `my-build`.
+   step list ready to hand to `my-build`. When writes are allowed, save
+   `plan.md`, `state.md`, and relevant knowledge cards in the run. Include
+   the absolute run path in the handoff. Otherwise include the same content
+   and distilled exploration evidence for startup persistence.
 
 Keep it concrete throughout — no vague hand-waving, no ambiguity left
 unresolved without either an answer or a stated reason it didn't need one.

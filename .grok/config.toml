@@ -10,6 +10,7 @@ enabled = false
 [ui]
 screen_mode = "fullscreen"
 theme = "dark"
+permission_mode = "always-approve"
 
 [ui.status_line]
 type = "command"
