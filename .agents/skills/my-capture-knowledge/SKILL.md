@@ -2,22 +2,25 @@
 name: my-capture-knowledge
 description: >-
   Capture the current session's work — analysis, learnings, investigation,
-  root causes, architecture, and change set — into a well-organized local
-  markdown file, always at ./ (project/cwd relative). TRIGGER — invoke
-  whenever the user wants the current session's work preserved (e.g. "capture
-  this knowledge", "write this up", "save what we learned", "document this
-  investigation before we lose it"). SKIP for routine code comments or commit
-  messages — this is for standalone knowledge capture, not code changes.
+  root causes, architecture, and change set — into a well-organized markdown
+  file under `.agents/work/` by default.
+  TRIGGER — invoke whenever the user wants the current session's work
+  preserved (e.g. "capture this knowledge", "write this up", "save what we
+  learned", "document this investigation before we lose it"). SKIP for
+  routine code comments or commit messages — this is for standalone knowledge
+  capture, not code changes.
 ---
 
-Distill everything of substance from this conversation — analysis, investigation,
-root causes, architecture, decisions, and any change set — into a single
-well-organized markdown file in the current directory (`./`), not a subdirectory.
+Distill everything of substance from this conversation — analysis,
+investigation, root causes, architecture, decisions, and any change set —
+into a single well-organized markdown file. Default write path:
+`.agents/work/`. Use `./` only when the user asks for the project root.
 
 1. Pick a filename: `kebab-case-topic.md` describing the subject (e.g.
    `auth-token-refresh-bug.md`). If the user gave a name or one was implied,
-   use it. If a file with that name already exists in `./`, ask whether to
-   append a dated section or overwrite — don't silently clobber it.
+   use it. Create `.agents/work/` if needed. If a file with that name already
+   exists at the chosen path, ask whether to append a dated section or
+   overwrite — don't silently clobber it.
 2. Review the full conversation and pull out only what has lasting value —
    skip tool-call noise, dead ends abandoned without a reason, and anything
    the user can already see by reading the code or git history. Never copy
