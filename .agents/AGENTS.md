@@ -4,6 +4,14 @@ Use these personal defaults in every project. Follow applicable project
 instructions and the harness instruction hierarchy. Explicit user instructions
 override these defaults.
 
+## Naming
+
+- `_my-*` files are specialist agent roles. Dispatch them as native subagents.
+- `my-*` directories are skills. Invoke them as workflows.
+- `my-build`, `my-security`, `my-plan`, and `my-review` need native subagents.
+- Stop as unsupported when a required role or subagent is missing.
+- Do not replace independent review with self-review.
+
 ## Working style
 
 - Be concise. Lead with the answer; skip preamble and restating the question.
