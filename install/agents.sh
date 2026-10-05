@@ -38,7 +38,7 @@ render_instructions() {
   fi
   if [[ "$optional" == true ]]; then
     printf '\n## Unsupported workflows\n\n'
-    printf 'This adapter does not install specialist roles. Do not run my-build or\nmy-security without their required specialist roles. Run my-plan only when\nthe harness provides independent exploration subagents.\n'
+    printf 'This adapter does not install specialist roles. Do not run my-build,\nmy-security, or my-review without their required specialist roles. Run\nmy-plan only when the harness provides independent exploration subagents.\n'
   fi
   if [[ "$harness" == grok ]]; then
     cat <<'EOF'
@@ -154,6 +154,7 @@ render_shared_export() {
     case "$(basename "$skill")" in
       my-build) printf ' — requires implementation and review subagents with specialist roles.' ;;
       my-security) printf ' — requires an independent read-only security-reviewer role.' ;;
+      my-review) printf ' — requires an independent read-only reviewer role.' ;;
       my-plan) printf ' — requires independent exploration subagents.' ;;
     esac
     printf '\n'

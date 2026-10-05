@@ -29,6 +29,25 @@ capture, product diffs, untracked product discovery, review, and normal
 commit candidates. Stage explicit product paths only; never use broad
 `git add`. Do not restore baseline patches automatically.
 
+## Build loop detail
+
+Use this reference from `my-build` and related skills.
+
+- Before dispatch: confirm branch, note dirty tree, check whether tests already
+  pass, and record identity, authorization, and task status in `state.md`.
+- Capture each task baseline once before writers start: SHA, staged/unstaged
+  patches, and relevant untracked product evidence on owned paths.
+- On `NEEDS_CONTEXT`: resolve low-stakes questions yourself; ask only when
+  importance and rework cost are both high.
+- On `BLOCKED`: stop and report the technical failure.
+- Join writers and freeze review inputs before review or shared checks.
+- Loop Critical/Important findings through the same implementer, then a fresh
+  reviewer. After two failed fix attempts on the same finding, ask rather than
+  retry silently.
+- Mark a task completed only after tests pass and review approves.
+- When commits are authorized, the coordinator commits serially after writers
+  stop and reviews approve.
+
 ## Scheduling
 
 - Keep small tasks on one agent. Parallelize only distinct, independent work.
@@ -80,12 +99,13 @@ at the first unfinished phase. Skip completed tasks only if their evidence
 is still valid; preserve original baselines.
 
 Resume the existing task agent after interruptions or context gaps, and
-resume the existing implementer for review fixes. Use its recorded native ID and task checkpoint. Do not replace
-it until native recovery is unavailable and the prior writer cannot still
-write. A continuing usage or quota error does not prove recovery is
-unavailable. If these conditions cannot be established, stop and report the
-blocker. Resume a recorded reviewer for an interrupted review of the same
-diff. Use fresh independent reviewers for new review rounds or changed diffs.
+resume the existing implementer for review fixes. Use its recorded native ID
+and task checkpoint. Do not replace it until native recovery is unavailable
+and the prior writer cannot still write. A continuing usage or quota error
+does not prove recovery is unavailable. If these conditions cannot be
+established, stop and report the blocker. Resume a recorded reviewer for an
+interrupted review of the same diff. Use fresh independent reviewers for new
+review rounds or changed diffs.
 
 Inspect an interrupted operation's unknown outcome before replaying it.
 A planned next action is not evidence of success.

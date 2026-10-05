@@ -20,7 +20,7 @@ inline exploration for the required subagent.
 
 Do not edit product files or write code. When the harness permits writes,
 write only run artifacts under `.agents/work/`. Follow
-[durable progress](../my-build/references/progress.md) for run selection,
+[durable progress](../../references/progress.md) for run selection,
 checkpoints, and fingerprint-validated knowledge. Load a linked or
 unambiguous matching run before new exploration. Reuse its decisions and
 validate relevant cards before trusting them.
@@ -30,63 +30,40 @@ exploration handoff for `my-build` to persist at startup.
 
 1. Use a narrowly scoped native explorer; add others for useful independent
    questions. Follow
-   [Scheduling](../my-build/references/progress.md#scheduling) for distinct
+   [Scheduling](../../references/progress.md#scheduling) for distinct
    questions and stable evidence; do not repeat an investigation. Resume the
    recorded explorer for each scope. Follow recovery rules before replacement.
    Give each explorer the full task context and its scope. Have it report
-   back how it currently works: real `file:line` locations, existing
-   patterns/utilities to reuse. Keep the raw search/read noise out of your
-   own context; work from its distilled report for the rest of this process.
-   Record each scope and native ID immediately when writes are allowed. Reuse
-   that agent for related follow-ups. As coordinator, persist
-   important discoveries and their source fingerprints as they arise,
-   before final handoff.
+   how the code works today: real `file:line` locations and patterns to reuse.
+   Keep raw search noise out of your context; work from its distilled report.
+   Record each scope and native ID immediately when writes are allowed.
+   Persist important discoveries and source fingerprints before final handoff.
 2. Enumerate every open decision the task leaves unresolved — including ones
-   the master never raised or hinted at. Don't limit yourself to what was
-   asked; actively hunt across each category:
+   never raised. Hunt across each category:
    - **Technical** — approach, libraries, patterns, data model/API shape.
-   - **Behavioral** — edge cases, defaults, error handling, what happens on
-     invalid input.
-   - **Scope** — what's in vs. explicitly out; anything adjacent that looks
-     related but shouldn't be touched.
-   - **Consequence** — anything hard to reverse or with blast radius beyond
-     this change (schema/API changes, deleted data, breaking changes,
-     security/perf implications, things other code or people depend on).
-3. Triage every decision found in step 2 against one test: **if this is
-   decided now and turns out wrong, how hard is it to rework later?**
-   Score each on both importance (how much it shapes the outcome) and
-   rework cost (effort/risk to undo or change course after the fact).
-   - **High importance + high rework cost** → must ask. This is the bar for
-     everything in step 4 — an unraised decision that clears it belongs in
-     the questions just as much as one the master already flagged.
-   - **Low on either axis** (cheap to change later, or barely affects the
-     outcome) → decide it yourself. Pick the sensible default, note the
-     choice and a one-line reason in the writeup, and move on — don't ask
-     just to be thorough. Judgment calls like this are the autonomy the
-     master is trusting you with.
-   When genuinely unsure which bucket a decision falls in, ask — the cost of
-   one extra question is far lower than building on the wrong foundation.
+   - **Behavioral** — edge cases, defaults, error handling, invalid input.
+   - **Scope** — what is in vs. out; adjacent work that must not be touched.
+   - **Consequence** — hard-to-reverse or high blast-radius choices
+     (schema/API changes, deleted data, breaking changes, security/perf).
+3. Triage each decision: **if this is wrong, how hard is rework later?**
+   Score importance and rework cost.
+   - **High importance + high rework cost** → must ask.
+   - **Low on either axis** → decide yourself. Note the choice and a
+     one-line reason. Do not ask just to be thorough.
+   When unsure which bucket applies, ask.
 4. For each decision that cleared the bar, have a recommended answer ready
-   with a one-line reason, plus the realistic alternative(s) and their
-   trade-off.
+   with a one-line reason, plus realistic alternatives and trade-offs.
 5. Use the native question tool when available. Batch questions within its
    limits and list your recommendation first. Otherwise ask in conversation.
-   Ask free-text questions directly when choices do not fit. Wait for answers before
-   proceeding — don't assume. If an answer reveals a new decision that also
-   clears the bar in step 3, ask that one too — don't treat the first batch
-   as final just because it was first.
-6. Separately, call out risks and consequences that don't need a decision but
-   the master should know about before work starts (perf cliffs, migration
-   pain, security exposure, things likely to surprise them later).
+   Wait for answers before proceeding. If an answer reveals another
+   high-bar decision, ask that too.
+6. Separately, call out risks that need no decision but should be known
+   before work starts (perf cliffs, migration pain, security exposure).
 7. Once every decision is resolved, write the finalized scope: files that
-   would change and what each needs, the decisions made — both the ones
-   asked and the ones you made autonomously, with reasons — and an ordered
-   step list ready to hand to `my-build`. When writes are allowed, save
-   `plan.md`, `state.md`, and relevant knowledge cards in the run. Include
-   the absolute run path in the handoff. Otherwise include the same content
-   and distilled exploration evidence for startup persistence.
+   would change, decisions made (asked and autonomous) with reasons, and an
+   ordered step list for `my-build`. When writes are allowed, save
+   `plan.md`, `state.md`, and relevant knowledge cards. Include the absolute
+   run path. Otherwise include the same content for startup persistence.
 
-Keep it concrete throughout — no vague hand-waving, no ambiguity left
-unresolved without either an answer or a stated reason it didn't need one.
-If the task turns out to be trivial once explored, say so and skip the
+Keep it concrete. If the task is trivial once explored, say so and skip
 ceremony rather than manufacturing decisions.

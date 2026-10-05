@@ -144,7 +144,7 @@ does not create duplicate Grok skill links.
 | Source                                  | Purpose                                                        |
 | --------------------------------------- | -------------------------------------------------------------- |
 | `.agents/AGENTS.md`                     | Concise working rules, safety defaults, and verification.      |
-| `.agents/skills/my-*/SKILL.md`          | Twelve portable workflows.                                     |
+| `.agents/skills/my-*/SKILL.md`          | Thirteen portable workflows.                                   |
 | `.agents/personas/my-humble-servant.md` | Plain Markdown persona body.                                   |
 | `.agents/agents/_my-*.md`               | Three shared specialist instruction bodies.                    |
 | `.claude/templates/`                    | Native role and output-style metadata, outside discovery.      |
@@ -226,13 +226,14 @@ after changing its config or hooks. See
 | Skill                    | Purpose                                          |
 | ------------------------ | ------------------------------------------------ |
 | `my-build`               | Implement tasks with subagents and review.       |
-| `my-capture-knowledge`   | Save session findings in project Markdown.       |
+| `my-capture-knowledge`   | Save session findings under `.agents/work/`.     |
 | `my-commit`              | Stage and commit with a concise message.         |
 | `my-debug`               | Diagnose a failure without applying a fix.       |
 | `my-deps`                | Explain a dependency and its uses.               |
 | `my-explain`             | Explain code or a concept.                       |
 | `my-plan`                | Explore and scope work before coding.            |
 | `my-pr`                  | Prepare and open a pull request with approval.   |
+| `my-review`              | Review a diff with an independent reviewer.      |
 | `my-security`            | Audit code with an independent reviewer.         |
 | `my-test`                | Find and run the project's tests.                |
 | `my-tidy`                | Clean the current diff without behavior changes. |
@@ -253,7 +254,7 @@ you dispatch a Grok reviewer. It cannot run Git commands or tests. These tool
 restrictions are not a filesystem sandbox. Grok's implementer can read, edit, and run shell commands.
 See [Grok subagents](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md).
 
-`my-plan`, `my-build`, and `my-security` check required capabilities before work.
+`my-plan`, `my-build`, `my-security`, and `my-review` check required capabilities before work.
 They stop as unsupported when their required subagents or roles are absent.
 They do not replace independent review with self-review or sequential execution.
 Gemini and Amp adapters supply no specialist roles. `my-plan` needs actual
