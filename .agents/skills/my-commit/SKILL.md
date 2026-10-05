@@ -20,7 +20,9 @@ Review the current working-tree changes and create a git commit.
    (types: feat, fix, refactor, docs, test, chore, perf, build, ci). Keep the
    summary under ~72 chars, imperative mood. Add a short body only if the "why"
    isn't obvious from the diff.
-4. Show me the message and the staged file list, then commit.
+4. Show me the proposed message and the staged file list. Wait for a short
+   confirm before `git commit`, unless I already gave an explicit message
+   (for example, "commit with message X").
 
 Do not push. If the changes span multiple unrelated concerns, suggest splitting
 them into separate commits instead of one. If a pre-commit hook fails, fix the
