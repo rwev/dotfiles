@@ -156,8 +156,6 @@ does not create duplicate Grok skill links.
 | `.grok/templates/agents/`               | Native Grok specialist metadata, outside discovery.            |
 | `.grok/config.toml`                     | Grok runtime defaults and command statusline wiring.           |
 | `.grok/statusline.sh`                   | Model, effort, project, branch, context use, and session cost. |
-| `.grok/notify.sh`                       | Desktop attention alerts with a terminal-bell fallback.        |
-| `.grok/hooks/notifications.json`        | Native idle and approval notification matchers.                |
 
 Rules keep changes small, reuse existing code, require verification, and report
 failures honestly. Explicit user instructions override these personal defaults.
@@ -172,22 +170,22 @@ Existing model, reasoning, permission, memory, plugin, and UI defaults stay in
 place. Copilot, Gemini, and Amp keep vendor runtime defaults. The installer adds
 no authentication or model configuration for them.
 
-### Grok runtime and attention signals
+### Grok runtime
 
 Grok fills missing defaults from `.grok/config.toml`. Existing local values win.
 The adapter does not pin a model. Its defaults are:
 
 - High reasoning effort; memory and memory v2 disabled.
 - Fullscreen UI with the dark theme and a command statusline.
+- `permission_mode = "always-approve"`, `yolo = true`, `max_thoughts_width = 120`, `compact_mode = true`, `show_timeline = true`, `page_flip_on_send = false`, and `show_thinking_blocks = true`.
 - A 600-second ask-user timeout; subagents and active-agent messages enabled.
-- Model inheritance for subagents; the `workspace` sandbox profile.
+- Model inheritance for subagents; sandbox profile `off`.
 - Read-deny rules for common secret paths.
 - `[compat.claude] agents = false`, to avoid duplicate Claude global instructions.
 
 Other Claude compatibility settings remain unchanged. The `grk`, `grkc`, and
-`grkr` aliases skip approval prompts with `--always-approve`. They keep deny
-rules and the configured sandbox. Linux workspace sandboxing requires
-`bubblewrap`; Grok refuses startup if it cannot enforce the deny rules. See
+`grkr` aliases add `--always-approve`. They do not select a sandbox profile.
+See
 [Grok configuration](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/26-config-reference.md)
 and [sandbox profiles](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/18-sandbox.md).
 
@@ -204,22 +202,6 @@ session tokens. Grok supplies no rate-limit or changed-line totals, so the
 script omits them. It reads only the native payload, not private transcripts,
 and makes no network requests. See
 [statusline data](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/25-status-line.md).
-
-Native `Notification` hooks report `Ready for input` for `idle_prompt` and
-`Approval needed` for `permission_prompt`. They show only the project basename,
-not prompts or assistant text. The idle alert fires after about one minute of
-sustained main-session idle. It means the session awaits input, not that a task
-succeeded: Grok can also become idle after an error or interruption. A new
-message cancels the pending idle alert. There are no `Stop`, `SubagentStop`, or
-`task_complete` alerts.
-
-Linux uses `notify-send` when available. macOS uses `osascript`. If no helper
-works, the handler tries a terminal bell; without a terminal, it stays quiet.
-Notification failures do not block Grok. The installer adds no desktop helper.
-It links scripts individually and copies the hook JSON as a regular file,
-because the workspace sandbox rejects symlinked hook sources. Restart Grok
-after changing its config or hooks. See
-[native hooks](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md).
 
 ### Skills and specialist roles
 
@@ -284,8 +266,9 @@ all tracked settings exist. If a missing
 setting must be added, the installer backs up the link and creates a real
 config file; it does not change the external target. Custom `GROK_HOME` paths
 receive a shell-quoted statusline command. Existing statusline commands stay
-unchanged. Other local hook files stay unchanged; an existing custom
-`notifications.json` is backed up before replacement.
+unchanged. A later install removes a managed `notify.sh` symlink and a
+`notifications.json` whose hook commands are only `../notify.sh`. Other hook
+files stay in place. A symlinked `hooks` directory is left alone.
 
 Global instruction overrides are appended from these machine-local files:
 
@@ -342,8 +325,8 @@ The suite covers clean installs, repeat runs, target selection, custom homes,
 dry runs, local overrides, migration, backups, invalid JSON, and untouched
 runtime files. It also checks generated profiles and skill metadata. When
 `grok` is on `PATH`, it checks native discovery in isolated homes outside this
-repository. The check sends no model requests. Script tests use mock desktop
-helpers and an isolated terminal; they send no real desktop alerts.
+repository. The check sends no model requests. Script tests use an isolated
+PATH and send no network requests.
 
 Check native discovery after installation:
 
@@ -352,18 +335,18 @@ Check native discovery after installation:
 - Copilot: inspect `/instructions`, `copilot skill list`, and custom agents.
 - Gemini: inspect `/memory show` and skill discovery.
 - Amp: inspect instruction sources and skill listings.
-- Grok: run `grok inspect --json` to inspect instructions, skills, agents, and hooks.
+- Grok: run `grok inspect --json` to inspect instructions, skills, and agents.
 
-Implementation validation passed the 57 isolated tests. Grok Build 1.0.46
-discovered all twelve skills and three native specialist definitions with
+Implementation validation passed the 51 isolated tests. Grok Build 1.0.46
+discovered all thirteen skills and three native specialist definitions with
 default and custom homes. Active instructions contained one rules body and
 one persona when the Claude adapter was also installed. This passed with
 native config and with Claude instruction compatibility disabled by environment.
-The native check also discovered both attention hooks and all secret-read
-rules. On Linux without `bubblewrap`, it first checked fail-closed startup,
-then used `--sandbox off` only for discovery. Actual sandbox enforcement,
-Grok specialist execution, and desktop notification delivery remain unverified.
-Codex's debug prompt input showed the rules, one persona, and all twelve skills;
+The native check also discovered all secret-read rules. On Linux without
+`bubblewrap`, it first checked fail-closed startup, then used `--sandbox off`
+only for discovery. Actual sandbox enforcement and Grok specialist execution
+remain unverified.
+Codex's debug prompt input showed the rules, one persona, and all thirteen skills;
 all three generated
 Codex profiles parsed as TOML. Actual specialist execution and interactive
 Claude discovery remain unverified. OpenCode, Copilot, Gemini, and Amp were not
@@ -387,7 +370,7 @@ dotfiles/
 ├── .opencode/          # Native settings and metadata templates
 ├── .codex/             # Native TOML defaults
 ├── .copilot/agents/    # Native specialist metadata
-├── .grok/              # Native defaults, statusline, attention hooks, and templates
+├── .grok/              # Native defaults, statusline, and templates
 └── tests/              # Isolated installer checks
 ```
 

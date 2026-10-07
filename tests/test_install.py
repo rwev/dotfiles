@@ -15,11 +15,14 @@ GROK_DEFAULTS = {
     'memory': {'enabled': False},
     'memory_v2': {'enabled': False},
     'ui': {'screen_mode': 'fullscreen', 'theme': 'dark',
+           'permission_mode': 'always-approve', 'max_thoughts_width': 120,
+           'yolo': True, 'compact_mode': True, 'show_timeline': True,
+           'page_flip_on_send': False, 'show_thinking_blocks': True,
            'status_line': {'type': 'command', 'command': '~/.grok/statusline.sh'}},
     'toolset': {'ask_user_question': {'timeout_secs': 600}},
     'subagents': {'enabled': True},
     'features': {'active_agent_messages': True, 'subagent_model_inheritance': True},
-    'sandbox': {'profile': 'workspace'},
+    'sandbox': {'profile': 'off'},
     'compat': {'claude': {'agents': False}},
     'permission': {'deny': [
         'Read(**/.env)', 'Read(**/.env.*)', 'Read(secrets/**)',
@@ -72,7 +75,7 @@ class InstallerTests(unittest.TestCase):
 
     def test_clean_and_idempotent(self):
         self.install()
-        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 12)
+        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 13)
         for path in ['.claude/CLAUDE.md', '.codex/AGENTS.md',
                      '.config/opencode/AGENTS.md', '.copilot/copilot-instructions.md']:
             text = (self.home / path).read_text()
@@ -163,22 +166,13 @@ class InstallerTests(unittest.TestCase):
                 self.assertIn('request the missing context', body)
             shared_body = (ROOT / '.agents/agents' / (name + '.md')).read_text().split('---', 2)[2]
             self.assertTrue(body.endswith(shared_body.lstrip('\n')))
-        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 12)
+        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 13)
         self.assertFalse((grok / 'skills').exists())
-        for name in ['statusline.sh', 'notify.sh']:
-            self.assertTrue((grok / name).is_symlink())
-            self.assertEqual((grok / name).resolve(), ROOT / '.grok' / name)
-        self.assertFalse((grok / 'hooks/notifications.json').is_symlink())
-        self.assertEqual((grok / 'hooks/notifications.json').read_bytes(),
-                         (ROOT / '.grok/hooks/notifications.json').read_bytes())
+        self.assertTrue((grok / 'statusline.sh').is_symlink())
+        self.assertEqual((grok / 'statusline.sh').resolve(), ROOT / '.grok' / 'statusline.sh')
         self.assertTrue(os.access(grok / 'statusline.sh', os.X_OK))
-        self.assertTrue(os.access(grok / 'notify.sh', os.X_OK))
-        hooks = json.loads((grok / 'hooks/notifications.json').read_text())['hooks']
-        self.assertEqual(set(hooks), {'Notification'})
-        self.assertEqual({group['matcher'] for group in hooks['Notification']},
-                         {'idle_prompt', 'permission_prompt'})
-        for group in hooks['Notification']:
-            self.assertEqual(group['hooks'], [{'type': 'command', 'command': '../notify.sh'}])
+        self.assertFalse((grok / 'notify.sh').exists())
+        self.assertFalse((grok / 'hooks' / 'notifications.json').exists())
         self.assertFalse((self.home / '.claude').exists())
         before = self.snapshot()
         self.install('--tools=grok')
@@ -230,10 +224,32 @@ class InstallerTests(unittest.TestCase):
         destination = hooks / 'notifications.json'
         destination.symlink_to(external)
         (hooks / 'custom.json').write_text(content)
+        notify = grok / 'notify.sh'
+        notify.symlink_to(self.home / 'absent-notify.sh')
         self.install('--tools=grok')
-        self.assertFalse(destination.is_symlink())
-        self.assertTrue((hooks / 'notifications.json.bak').is_symlink())
+        self.assertTrue(destination.is_symlink())
+        self.assertEqual(os.readlink(destination), str(external))
         self.assertEqual(external.read_text(), content)
+        self.assertEqual((hooks / 'custom.json').read_text(), content)
+        self.assertFalse(notify.exists())
+
+        managed = '{"hooks":{"Notification":[{"hooks":[{"type":"command","command":"../notify.sh"}]}]}}\n'
+        destination.unlink()
+        destination.write_text(managed)
+        notify.symlink_to(self.home / 'absent-notify.sh')
+        self.install('--tools=grok')
+        self.assertFalse(destination.exists())
+        self.assertFalse(notify.exists())
+        self.assertEqual((hooks / 'custom.json').read_text(), content)
+        self.assertEqual(external.read_text(), content)
+
+        kept = '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"keep.sh"}]}]}}\n'
+        destination.write_text(kept)
+        notify.write_text('#!/bin/sh\nexit 0\n')
+        self.install('--tools=grok')
+        self.assertEqual(destination.read_text(), kept)
+        self.assertTrue(notify.is_file())
+        self.assertFalse(notify.is_symlink())
         self.assertEqual((hooks / 'custom.json').read_text(), content)
         before = self.snapshot()
         self.install('--tools=grok')
@@ -245,11 +261,13 @@ class InstallerTests(unittest.TestCase):
         outside = self.home / 'outside'
         outside.mkdir()
         (outside / 'sentinel').write_text('untouched\n')
+        (outside / 'notifications.json').write_text(
+            '{"hooks":{"Notification":[{"hooks":[{"type":"command","command":"../notify.sh"}]}]}}\n')
         (grok / 'hooks').symlink_to(outside)
-        result = self.install('--tools=grok', ok=False)
-        self.assertIn('Refusing to write through directory symlink', result.stderr)
-        self.assertEqual({p.name for p in outside.iterdir()}, {'sentinel'})
+        self.install('--tools=grok')
+        self.assertEqual({p.name for p in outside.iterdir()}, {'sentinel', 'notifications.json'})
         self.assertEqual((outside / 'sentinel').read_text(), 'untouched\n')
+        self.assertTrue((grok / 'hooks').is_symlink())
 
     def test_grok_dry_run(self):
         self.install('--tools=grok', '--dry-run')
@@ -306,7 +324,9 @@ class InstallerTests(unittest.TestCase):
             '[models]', 'default_reasoning_effort = "low"',
             '[memory]', 'enabled = true', '[memory_v2]', 'enabled = true',
             '[ui]', 'screen_mode = "minimal"', 'theme = "local"',
-            'permission_mode = "ask"',
+            'permission_mode = "ask"', 'max_thoughts_width = 80', 'yolo = false',
+            'compact_mode = false', 'show_timeline = false',
+            'page_flip_on_send = true', 'show_thinking_blocks = false',
             '[ui.status_line]', 'type = "disabled"', 'command = "local-script"',
             '[toolset.ask_user_question]', 'timeout_secs = 120',
             '[subagents]', 'enabled = false',
@@ -531,17 +551,12 @@ class InstallerTests(unittest.TestCase):
                     paths = [entry['path'] for entry in active]
                     grok = Path(self.env.get('GROK_HOME', self.home / '.grok'))
                     self.assertEqual(tomllib.loads((grok / 'config.toml').read_text())['sandbox'],
-                                     {'profile': 'workspace'})
+                                     {'profile': 'off'})
                     self.assertGreaterEqual(report['permissions']['loaded'],
                                             len(GROK_DEFAULTS['permission']['deny']))
                     self.assertEqual(report['permissions']['skipped'], [])
-                    hooks = [hook for hook in report['hooks'] if hook['event'] == 'notification']
-                    self.assertEqual({hook['matcher'] for hook in hooks},
-                                     {'idle_prompt', 'permission_prompt'})
-                    self.assertTrue(all(hook['hookType'] == 'command' and
-                                        hook['target'] == '../notify.sh' and
-                                        hook['source']['path'] == str(grok / 'hooks')
-                                        for hook in hooks))
+                    hooks = [hook for hook in report.get('hooks', []) if hook['event'] == 'notification']
+                    self.assertEqual(hooks, [])
                     self.assertIn(str(grok / 'config.toml') + ' (config)',
                                   report['permissions']['sources'])
                     self.assertIn(str(grok / 'AGENTS.md'), paths)
@@ -928,7 +943,7 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual((self.home / '.agents/backups/skills/my-test.bak/SKILL.md').read_text(),
                          'custom same-name skill')
         self.assertTrue(own_skill.is_symlink())
-        self.assertEqual(len(list((self.home / '.agents/skills').glob('my-*'))), 12)
+        self.assertEqual(len(list((self.home / '.agents/skills').glob('my-*'))), 13)
         self.assertFalse(any(p.name.endswith('.bak') for p in (self.home / '.agents/skills').iterdir()))
 
     def test_dry_run_legacy_directory_migration(self):
@@ -957,7 +972,7 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual((backup / 'SKILL.md').read_text(), 'custom same-name skill')
         self.assertEqual((outside / 'SKILL.md').read_text(), 'custom same-name skill')
         for root in [directory, self.home / '.agents/skills']:
-            self.assertEqual(len(list(root.iterdir())), 12)
+            self.assertEqual(len(list(root.iterdir())), 13)
             self.assertEqual({p.name for p in root.iterdir()},
                              {p.name for p in (ROOT / '.agents/skills').iterdir()})
 

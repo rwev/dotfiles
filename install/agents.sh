@@ -232,23 +232,38 @@ install_copilot() {
   install_native_agents copilot "$COPILOT_DIR/agents"
 }
 
+grok_notification_commands_are_notify_only() {
+  jq -e '
+    def commands: [.. | objects | .command? // empty | select(type == "string")];
+    (commands | length) > 0 and (commands | all(. == "../notify.sh"))
+  ' "$1" >/dev/null 2>&1
+}
+
+# Drop the notification hook this installer used to copy.
+# Leave custom hook files alone, and never follow a symlinked hooks directory.
+remove_managed_grok_notifications() {
+  local notify="$GROK_DIR/notify.sh" hooks="$GROK_DIR/hooks" dest
+  dest="$hooks/notifications.json"
+  if [[ -L "$notify" ]]; then
+    info "Removing $notify"
+    run rm -- "$notify"
+  fi
+  if [[ -L "$hooks" || ! -f "$dest" || -L "$dest" ]]; then
+    return 0
+  fi
+  if grok_notification_commands_are_notify_only "$dest"; then
+    info "Removing $dest"
+    run rm -- "$dest"
+  fi
+}
+
 install_grok() {
-  local hooks="$GROK_DIR/hooks/notifications.json" src="$DOTFILES_DIR/.grok/hooks/notifications.json"
   ensure_directory "$GROK_DIR"
   install_instructions "$GROK_DIR/AGENTS.md" true false grok
   install_native_agents grok "$GROK_DIR/agents"
   install_grok_config "$GROK_DIR/config.toml"
   link_file "$DOTFILES_DIR/.grok/statusline.sh" "$GROK_DIR/statusline.sh"
-  link_file "$DOTFILES_DIR/.grok/notify.sh" "$GROK_DIR/notify.sh"
-  ensure_directory "$GROK_DIR/hooks"
-  # Grok's workspace sandbox rejects retargetable hook source symlinks.
-  if [[ ! -L "$hooks" && -f "$hooks" ]] && cmp -s "$src" "$hooks"; then
-    success "Already installed: $hooks"
-  else
-    [[ ! -e "$hooks" && ! -L "$hooks" ]] || backup_file "$hooks"
-    info "Installing $hooks"
-    run cp "$src" "$hooks"
-  fi
+  remove_managed_grok_notifications
 }
 
 install_optional() {

@@ -11,6 +11,12 @@ enabled = false
 screen_mode = "fullscreen"
 theme = "dark"
 permission_mode = "always-approve"
+max_thoughts_width = 120
+yolo = true
+compact_mode = true
+show_timeline = true
+page_flip_on_send = false
+show_thinking_blocks = true
 
 [ui.status_line]
 type = "command"
@@ -27,21 +33,21 @@ active_agent_messages = true
 subagent_model_inheritance = true
 
 [sandbox]
-profile = "workspace"
+profile = "off"
 
 [compat.claude]
 agents = false
 
 [permission]
 deny = [
-  "Read(**/.env)",
-  "Read(**/.env.*)",
-  "Read(secrets/**)",
-  "Read(**/*.pem)",
-  "Read(**/*.key)",
-  "Read(**/id_rsa)",
-  "Read(**/id_ed25519)",
-  "Read(**/credentials.json)",
-  "Read(**/.ssh/**)",
-  "Read(**/.aws/credentials)",
+    "Read(**/.env)",
+    "Read(**/.env.*)",
+    "Read(secrets/**)",
+    "Read(**/*.pem)",
+    "Read(**/*.key)",
+    "Read(**/id_rsa)",
+    "Read(**/id_ed25519)",
+    "Read(**/credentials.json)",
+    "Read(**/.ssh/**)",
+    "Read(**/.aws/credentials)",
 ]

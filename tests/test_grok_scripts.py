@@ -1,14 +1,10 @@
-"""Exercise Grok scripts without host desktop helpers or notifications."""
-import fcntl
+"""Exercise the Grok statusline script."""
 import json
 import os
 from pathlib import Path
-import pty
-import select
 import shutil
 import subprocess
 import tempfile
-import termios
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,14 +34,6 @@ class GrokScriptTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stderr, '')
         return result.stdout
-
-    def calls(self):
-        path = self.path / 'calls'
-        return path.read_text().splitlines() if path.exists() else []
-
-    def notification(self, **extra):
-        return {'hookEventName': 'notification', 'notificationType': 'idle_prompt',
-                'cwd': '/work/project', **extra}
 
     def test_statusline_complete(self):
         self.assertEqual(self.run_script('statusline.sh', {
@@ -112,69 +100,6 @@ class GrokScriptTests(unittest.TestCase):
                           'branch': 'topic\tname'},
         }), 'Grok next  · quote \' $HOME `touch sentinel` · topic name')
         self.assertFalse((self.path / 'sentinel').exists())
-
-    def test_linux_notification_arguments_and_privacy(self):
-        self.mock('notify-send', 'printf "%s\\n" "$@" > "$CALLS"')
-        self.assertEqual(self.run_script('notify.sh', self.notification(
-            cwd='/work/project', message='private prompt', lastAssistantMessage='private reply')), '')
-        self.assertEqual(self.calls(), ['--', 'Grok: Ready for input', 'project'])
-
-    def test_permission_notification_and_alias_fields(self):
-        self.mock('notify-send', 'printf "%s\\n" "$@" > "$CALLS"')
-        payload = {'hook_event_name': 'Notification', 'notificationType': 'permission_prompt',
-                   'workspaceRoot': '/work/quoted \' $HOME `touch sentinel`\nnext'}
-        self.assertEqual(self.run_script('notify.sh', payload), '')
-        self.assertEqual(self.calls(), ['--', 'Grok: Approval needed',
-                                       "quoted ' $HOME `touch sentinel` next"])
-        self.assertFalse((self.path / 'sentinel').exists())
-
-    def test_ignores_other_events_and_subagents(self):
-        self.mock('notify-send', 'printf "called\\n" > "$CALLS"')
-        for payload in [self.notification(notificationType='task_complete'),
-                        self.notification(hookEventName='stop'),
-                        self.notification(subagentType='reviewer'),
-                        self.notification(subagent_type='reviewer'),
-                        self.notification(subagentId='child'),
-                        {'notificationType': 'idle_prompt'}, '{', '[]',
-                        self.notification(notificationType=False)]:
-            with self.subTest(payload=payload):
-                self.assertEqual(self.run_script('notify.sh', payload), '')
-        self.assertEqual(self.calls(), [])
-
-    def test_macos_notification_uses_fixed_source_and_argv(self):
-        self.mock('uname', 'printf "Darwin\\n"')
-        self.mock('osascript', 'printf "%s\\n" "$@" > "$CALLS"\ncat > "$CALLS.source"')
-        self.assertEqual(self.run_script('notify.sh', self.notification(cwd='/work/"quoted"')), '')
-        self.assertEqual(self.calls(), ['-', 'Grok: Ready for input', '"quoted"'])
-        source = (self.path / 'calls.source').read_text()
-        self.assertIn('on run argv', source)
-        self.assertIn('display notification', source)
-        self.assertNotIn('quoted', source)
-
-    def test_notification_backend_failures_and_no_helper_are_quiet(self):
-        self.mock('notify-send', 'printf "failure\\n" >&2\nexit 1')
-        self.assertEqual(self.run_script('notify.sh', self.notification()), '')
-        (self.bin / 'notify-send').unlink()
-        self.assertEqual(self.run_script('notify.sh', self.notification()), '')
-        self.assertEqual(self.run_script('notify.sh', self.notification(cwd={})), '')
-
-    def test_notification_terminal_bell_fallback(self):
-        master, slave = pty.openpty()
-        self.addCleanup(os.close, master)
-        self.addCleanup(os.close, slave)
-
-        def attach_terminal():
-            os.setsid()
-            fcntl.ioctl(slave, termios.TIOCSCTTY, 0)
-
-        process = subprocess.Popen(['bash', str(ROOT / '.grok/notify.sh')],
-                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE, env=self.env,
-                                   preexec_fn=attach_terminal)
-        out, err = process.communicate(json.dumps(self.notification()).encode(), timeout=5)
-        self.assertEqual((process.returncode, out, err), (0, b'', b''))
-        self.assertTrue(select.select([master], [], [], 1)[0])
-        self.assertEqual(os.read(master, 64), b'\a')
 
 
 if __name__ == '__main__':
