@@ -227,5 +227,5 @@ alias grk='grok --always-approve'
 alias grkc='grok --continue --always-approve'
 alias grkr='grok --resume --always-approve'
 
-# Codex — skip approval prompts and sandboxing.
-alias cxd='codex --dangerously-bypass-approvals-and-sandbox'
+# Codex — skip approval prompts. The configured sandbox stays on.
+alias cxd='codex --ask-for-approval never'

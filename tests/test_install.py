@@ -22,7 +22,7 @@ GROK_DEFAULTS = {
     'toolset': {'ask_user_question': {'timeout_secs': 600}},
     'subagents': {'enabled': True},
     'features': {'active_agent_messages': True, 'subagent_model_inheritance': True},
-    'sandbox': {'profile': 'off'},
+    'sandbox': {'profile': 'workspace'},
     'compat': {'claude': {'agents': False}},
     'permission': {'deny': [
         'Read(**/.env)', 'Read(**/.env.*)', 'Read(secrets/**)',
@@ -551,7 +551,7 @@ class InstallerTests(unittest.TestCase):
                     paths = [entry['path'] for entry in active]
                     grok = Path(self.env.get('GROK_HOME', self.home / '.grok'))
                     self.assertEqual(tomllib.loads((grok / 'config.toml').read_text())['sandbox'],
-                                     {'profile': 'off'})
+                                     {'profile': 'workspace'})
                     self.assertGreaterEqual(report['permissions']['loaded'],
                                             len(GROK_DEFAULTS['permission']['deny']))
                     self.assertEqual(report['permissions']['skipped'], [])
