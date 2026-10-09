@@ -84,7 +84,7 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(text.count('## Address'), 0 if path.startswith(('.claude', '.config')) else 1)
         for harness, suffix in [('.claude', '.md'), ('.codex', '.toml'),
                                  ('.config/opencode', '.md'), ('.copilot', '.agent.md')]:
-            for role in ['implementer', 'reviewer', 'security-reviewer']:
+            for role in ['implementer', 'reviewer', 'security-reviewer', 'explorer']:
                 path = self.home / harness / 'agents' / ('_my-' + role + suffix)
                 self.assertIn('## Process', path.read_text())
                 if suffix == '.toml':
@@ -150,7 +150,7 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(tomllib.loads((grok / 'config.toml').read_text()),
                          GROK_DEFAULTS)
         read_tools = {'read_file', 'grep', 'list_dir', 'todo_write'}
-        for role in ['implementer', 'reviewer', 'security-reviewer']:
+        for role in ['implementer', 'reviewer', 'security-reviewer', 'explorer']:
             name = '_my-' + role
             text = (grok / 'agents' / (name + '.md')).read_text()
             _, header, body = text.split('---', 2)
@@ -160,11 +160,13 @@ class InstallerTests(unittest.TestCase):
                 'implementer': read_tools | {'search_replace', 'run_terminal_cmd'},
                 'reviewer': read_tools,
                 'security-reviewer': read_tools | {'web_search'},
+                'explorer': {'read_file', 'grep', 'list_dir', 'run_terminal_cmd', 'web_search', 'web_fetch'},
             }[role]
             self.assertEqual(set(metadata['tools'].split(', ')), expected_tools)
             if role != 'implementer':
                 self.assertEqual(set(metadata['disallowedTools'].split(', ')), {'search_tool', 'use_tool'})
                 self.assertEqual(metadata['mcpInheritance'], 'none')
+            if role in {'reviewer', 'security-reviewer'}:
                 self.assertIn('full diff and test results', metadata['description'])
                 self.assertIn('cannot run git or tests', body)
                 self.assertIn('request the missing context', body)
@@ -547,7 +549,7 @@ class InstallerTests(unittest.TestCase):
                                                 capture_output=True, text=True, timeout=30)
                     self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                     report = json.loads(result.stdout)
-                    self.assertTrue({'_my-implementer', '_my-reviewer', '_my-security-reviewer'} <=
+                    self.assertTrue({'_my-implementer', '_my-reviewer', '_my-security-reviewer', '_my-explorer'} <=
                                     {agent['name'] for agent in report['agents']})
                     self.assertTrue({p.name for p in (ROOT / '.agents/skills').iterdir()} <=
                                     {skill['name'] for skill in report['skills']})
@@ -748,7 +750,7 @@ class InstallerTests(unittest.TestCase):
         self.assertTrue((directory / 'agents/_my-reviewer.toml.bak.1').is_symlink())
         config = tomllib.loads((directory / 'config.toml').read_text())
         self.assertEqual(config['model'], 'custom')
-        for role in ['reviewer', 'security-reviewer']:
+        for role in ['reviewer', 'security-reviewer', 'explorer']:
             config = tomllib.loads((directory / f'agents/_my-{role}.toml').read_text())
             self.assertEqual(config['sandbox_mode'], 'read-only')
 
@@ -804,7 +806,7 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(before, self.snapshot())
 
     def test_harness_agent_metadata(self):
-        self.install('--tools=claude,opencode,copilot,grok')
+        self.install('--tools=claude,codex,opencode,copilot,grok')
 
         def frontmatter(path):
             header = path.read_text().split('---', 2)[1]
@@ -812,23 +814,33 @@ class InstallerTests(unittest.TestCase):
                           if ': ' in line and not line.startswith(' '))
             return fields, header
 
-        for role in ['implementer', 'reviewer', 'security-reviewer']:
+        for role in ['implementer', 'reviewer', 'security-reviewer', 'explorer']:
             name = '_my-' + role
             canonical = frontmatter(ROOT / '.agents/agents' / (name + '.md'))[0]['description']
             claude = frontmatter(self.home / '.claude/agents' / (name + '.md'))[0]
             copilot = frontmatter(self.home / '.copilot/agents' / (name + '.agent.md'))[0]
             opencode, opencode_header = frontmatter(self.home / '.config/opencode/agents' / (name + '.md'))
-            for fields in [claude, copilot, opencode]:
+            codex = tomllib.loads((self.home / '.codex/agents' / (name + '.toml')).read_text())
+            for fields in [claude, copilot, opencode, codex]:
                 self.assertEqual(fields['description'], canonical)
             claude_tools = set(claude['tools'].split(', '))
             copilot_tools = set(json.loads(copilot['tools']))
+            has_web = role in {'security-reviewer', 'explorer'}
             self.assertNotIn('TodoWrite', claude_tools)
-            self.assertEqual({'WebFetch', 'WebSearch'} <= claude_tools, role == 'security-reviewer')
-            self.assertEqual('web' in copilot_tools, role == 'security-reviewer')
+            self.assertEqual({'WebFetch', 'WebSearch'} <= claude_tools, has_web)
+            self.assertEqual('web' in copilot_tools, has_web)
+            self.assertEqual('\n  webfetch: allow\n' in opencode_header, role == 'explorer')
+            self.assertEqual(codex.get('web_search'), 'live' if role == 'explorer' else None)
             self.assertIn('\n  task: deny\n', opencode_header)
-        grok = frontmatter(self.home / '.grok/agents/_my-implementer.md')[0]
-        self.assertEqual(grok['description'],
-                         frontmatter(ROOT / '.agents/agents/_my-implementer.md')[0]['description'])
+            if role != 'implementer':
+                self.assertFalse({'Write', 'Edit'} & claude_tools)
+                self.assertNotIn('edit', copilot_tools)
+                self.assertIn('\n  edit: deny\n', opencode_header)
+                self.assertEqual(codex['sandbox_mode'], 'read-only')
+        for name in ['_my-implementer', '_my-explorer']:
+            grok = frontmatter(self.home / '.grok/agents' / (name + '.md'))[0]
+            self.assertEqual(grok['description'],
+                             frontmatter(ROOT / '.agents/agents' / (name + '.md'))[0]['description'])
 
     def test_json_with_existing_local_is_backed_up(self):
         directory = self.home / '.claude'
@@ -866,7 +878,7 @@ class InstallerTests(unittest.TestCase):
             for directory in ['agents', 'output-styles']:
                 self.assertEqual(list((ROOT / tool / directory).glob('_my-*.md')), [])
         self.assertFalse((ROOT / '.claude/output-styles/my-humble-servant.md').exists())
-        for role in ['implementer', 'reviewer', 'security-reviewer']:
+        for role in ['implementer', 'reviewer', 'security-reviewer', 'explorer']:
             text = (self.home / f'.copilot/agents/_my-{role}.agent.md').read_text()
             self.assertIn('include-custom-instructions: true', text)
             self.assertIn('tools:', text)

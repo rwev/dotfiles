@@ -38,7 +38,7 @@ render_instructions() {
   fi
   if [[ "$optional" == true ]]; then
     printf '\n## Unsupported workflows\n\n'
-    printf 'This adapter does not install specialist roles. Do not run my-build,\nmy-security, or my-review without their required specialist roles. Run\nmy-plan only when the harness provides independent exploration subagents.\n'
+    printf 'This adapter does not install specialist roles. Do not run my-build,\nmy-security, my-review, or my-plan without their required specialist roles.\n'
   fi
   if [[ "$harness" == grok ]]; then
     cat <<'EOF'
@@ -136,6 +136,7 @@ render_native_agent() {
     printf 'description = '
     printf '%s' "$description" | jq -Rs . || return
     [[ "$name" == _my-implementer ]] || printf 'sandbox_mode = "read-only"\n'
+    [[ "$name" != _my-explorer ]] || printf 'web_search = "live"\n'
     printf 'developer_instructions = '
     markdown_body "$src" | jq -Rs . || return
   else
@@ -155,7 +156,7 @@ render_shared_export() {
       my-build) printf ' — requires implementation and review subagents with specialist roles.' ;;
       my-security) printf ' — requires an independent read-only security-reviewer role.' ;;
       my-review) printf ' — requires an independent read-only reviewer role.' ;;
-      my-plan) printf ' — requires independent exploration subagents.' ;;
+      my-plan) printf ' — requires an independent read-only explorer role.' ;;
     esac
     printf '\n'
   done

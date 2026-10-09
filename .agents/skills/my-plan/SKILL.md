@@ -9,14 +9,15 @@ description: >-
   out", "what would it take to do X", "scope this change", "plan this out in
   depth", "what do we need to decide before starting X"). SKIP when they want
   it built — use my-build instead.
-compatibility: Requires native subagent delegation with codebase read access.
+compatibility: Requires native subagents and the _my-explorer role.
 ---
 
 Task: the thing the user just asked about.
 
-Before scoping, check native subagent support. If unavailable, report
-`Unsupported: my-plan requires native subagents` and stop. Do not substitute
-inline exploration for the required subagent.
+Before scoping, check native subagent support and the `_my-explorer` role.
+If either is unavailable, report
+`Unsupported: my-plan requires native subagents and its explorer role` and
+stop. Do not substitute inline exploration for the required subagent.
 
 Do not edit product files or write code. When the harness permits writes,
 write only run artifacts under `.agents/work/`. Follow
@@ -28,8 +29,8 @@ validate relevant cards before trusting them.
 If writes are prohibited, return an artifact-ready plan and distilled
 exploration handoff for `my-build` to persist at startup.
 
-1. Use a narrowly scoped native explorer; add others for useful independent
-   questions. Follow
+1. Dispatch one `_my-explorer` per distinct, useful question, each with a
+   narrow scope. Follow
    [Scheduling](~/.agents/references/progress.md#scheduling) for distinct
    questions and stable evidence; do not repeat an investigation. Resume the
    recorded explorer for each scope. Follow recovery rules before replacement.

@@ -146,7 +146,7 @@ does not create duplicate Grok skill links.
 | `.agents/AGENTS.md`                     | Concise working rules, safety defaults, and verification.      |
 | `.agents/skills/my-*/SKILL.md`          | Thirteen portable workflows.                                   |
 | `.agents/personas/my-humble-servant.md` | Plain Markdown persona body.                                   |
-| `.agents/agents/_my-*.md`               | Three shared specialist instruction bodies.                    |
+| `.agents/agents/_my-*.md`               | Four shared specialist instruction bodies.                     |
 | `.agents/references/progress.md`        | Durable-progress rules that the workflows cite.                |
 | `.claude/templates/`                    | Native role and output-style metadata, outside discovery.      |
 | `.opencode/templates/agents/`           | Native role metadata, outside discovery.                       |
@@ -227,11 +227,12 @@ and makes no network requests. See
 Use native invocation syntax: `/my-commit` in Claude, `$my-commit` in Codex,
 or ask the CLI to use the named skill. Syntax depends on the harness.
 
-The four default adapters and Grok install `_my-implementer`, `_my-reviewer`, and
-`_my-security-reviewer`. Reviewer profiles omit native edit tools or restrict
-edit permissions. Claude, OpenCode, and Copilot reviewers still have shell
-access, so they are read-only by instruction only. Those settings and prompts
-are not enforced filesystem isolation. OpenCode roles deny the `task` tool, so
+The four default adapters and Grok install `_my-implementer`, `_my-reviewer`,
+`_my-security-reviewer`, and `_my-explorer`. Reviewer profiles omit native
+edit tools or restrict edit permissions. Claude, OpenCode, and Copilot
+reviewers still have shell access, so they are read-only by instruction
+only. Those settings and prompts are not enforced filesystem isolation.
+OpenCode roles deny the `task` tool, so
 they cannot spawn an editing subagent. The Claude, Copilot, and Grok security
 reviewers also get web tools for CVE checks.
 Codex reviewer profiles request a native read-only sandbox. Parent runtime
@@ -242,13 +243,20 @@ you dispatch a Grok reviewer. It cannot run Git commands or tests. These tool
 restrictions are not a filesystem sandbox. Grok's implementer can read, edit, and run shell commands.
 See [Grok subagents](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md).
 
+`my-plan` dispatches `_my-explorer` for read-only code and web research. Each
+harness that installs it gives it read, search, shell, and web tools.
+Explorer profiles omit native edit tools or restrict edit permissions. It is
+read-only by instruction on Claude, OpenCode, Copilot, and Grok. Codex
+requests a read-only sandbox and live web search for it. The Grok explorer profile disables MCP access. Grok
+`web_fetch` works only when `features.web_fetch` is on.
+
 `my-plan`, `my-build`, `my-security`, and `my-review` check required capabilities before work.
 They stop as unsupported when their required subagents or roles are absent.
 They do not replace independent review with self-review or sequential execution.
 In `my-build`, only the coordinator commits, after review approves.
 Implementers never commit; they list changed paths for explicit staging.
-Gemini and Amp adapters supply no specialist roles. `my-plan` needs actual
-independent exploration subagents even on those tools.
+Gemini and Amp adapters supply no specialist roles, so these four workflows
+are unsupported there.
 
 Codex's `workspace-write` sandbox keeps `.agents`, `.git`, and `.codex`
 read-only. Sandboxed Codex sessions therefore cannot write run files under
@@ -351,20 +359,22 @@ Check native discovery after installation:
 - Amp: inspect instruction sources and skill listings.
 - Grok: run `grok inspect --json` to inspect instructions, skills, and agents.
 
-Implementation validation passed the 51 isolated tests. Grok Build 1.0.46
-discovered all thirteen skills and three native specialist definitions with
+Implementation validation passed the 53 isolated tests. Grok Build 1.0.50
+discovered all thirteen skills and four native specialist definitions with
 default and custom homes. Active instructions contained one rules body and
 one persona when the Claude adapter was also installed. This passed with
 native config and with Claude instruction compatibility disabled by environment.
-The native check also discovered all secret-read rules. On Linux without
-`bubblewrap`, it first checked fail-closed startup, then used `--sandbox off`
-only for discovery. Actual sandbox enforcement and Grok specialist execution
+The native check also discovered all secret-read rules. `bubblewrap` was
+present, so discovery ran with the workspace sandbox on. Without it, the check
+first verifies fail-closed startup, then uses `--sandbox off` only for
+discovery. Actual sandbox enforcement and Grok specialist execution
 remain unverified.
-Codex's debug prompt input showed the rules, one persona, and all thirteen skills;
-all three generated
-Codex profiles parsed as TOML. Actual specialist execution and interactive
-Claude discovery remain unverified. OpenCode, Copilot, Gemini, and Amp were not
-installed on the validation machine, so their runtime discovery is unverified.
+All four generated Codex profiles parsed as TOML. Codex 0.160.1
+`codex doctor --json` accepted the explorer profile, including
+`web_search = "live"`, in an isolated home. Actual specialist execution and
+interactive Claude discovery remain unverified. OpenCode, Copilot, Gemini, and
+Amp were not installed on the validation machine, so their runtime discovery
+is unverified.
 
 ## File layout
 
@@ -379,7 +389,7 @@ dotfiles/
 │   └── agents.sh       # Per-tool agent adapters
 ├── .zshrc              # ~/.zshrc.core; local ~/.zshrc loads it
 ├── .zsh_plugins.txt    # Antidote plugin list
-├── .agents/            # Canonical rules, skills, persona, and specialist bodies
+├── .agents/            # Canonical rules, skills, persona, references, and roles
 ├── .claude/            # Native settings, statusline, and metadata templates
 ├── .opencode/          # Native settings and metadata templates
 ├── .codex/             # Native TOML defaults
