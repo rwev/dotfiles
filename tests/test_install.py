@@ -74,7 +74,7 @@ class InstallerTests(unittest.TestCase):
                 for p in self.home.rglob('*')}
 
     def test_clean_and_idempotent(self):
-        self.install()
+        self.install('--tools=claude,codex,opencode,copilot')
         self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 13)
         for path in ['.claude/CLAUDE.md', '.codex/AGENTS.md',
                      '.config/opencode/AGENTS.md', '.copilot/copilot-instructions.md']:
@@ -91,7 +91,7 @@ class InstallerTests(unittest.TestCase):
                     agent = tomllib.loads(path.read_text())
                     self.assertTrue(agent['developer_instructions'])
         before = self.snapshot()
-        self.install()
+        self.install('--tools=claude,codex,opencode,copilot')
         self.assertEqual(before, self.snapshot())
         self.assertFalse((self.home / '.zshrc').exists())
         self.assertFalse((self.home / '.grok').exists())
@@ -123,6 +123,32 @@ class InstallerTests(unittest.TestCase):
         self.install('--dry-run', '--tools=gemini,amp')
         self.assertEqual(before, self.snapshot())
 
+    def test_harness_summary(self):
+        hint = 'List excluded harnesses in --tools to install them, e.g. --tools='
+        for args, installed, excluded, example in [
+            ((), 'Installed harnesses: claude, grok',
+             'Excluded harnesses: codex, opencode, copilot, gemini, amp', 'claude,grok,codex'),
+            (('--dry-run',), 'Would install harnesses: claude, grok',
+             'Excluded harnesses: codex, opencode, copilot, gemini, amp', 'claude,grok,codex'),
+            (('--tools=grok,codex',), 'Installed harnesses: codex, grok',
+             'Excluded harnesses: claude, opencode, copilot, gemini, amp', 'codex,grok,claude'),
+            (('--tools=claude,codex,opencode,copilot,gemini,amp',),
+             'Installed harnesses: claude, codex, opencode, copilot, gemini, amp',
+             'Excluded harnesses: grok', 'claude,codex,opencode,copilot,gemini,amp,grok'),
+            (('--tools=universal',), 'Installed harnesses: none (shared layer only)',
+             'Excluded harnesses: claude, codex, opencode, copilot, gemini, amp, grok', 'claude'),
+        ]:
+            with self.subTest(args=args):
+                output = self.install(*args).stdout
+                self.assertEqual(output.count(installed + '\n'), 1)
+                self.assertEqual(output.count(excluded + '\n'), 1)
+                self.assertEqual(output.count(hint), 1)
+                self.assertIn(hint + example + '\n', output)
+        output = self.install('--tools=claude,codex,opencode,copilot,gemini,amp,grok').stdout
+        self.assertIn('Installed harnesses: claude, codex, opencode, copilot, gemini, amp, grok', output)
+        self.assertIn('Excluded harnesses: none', output)
+        self.assertNotIn(hint, output)
+
     def test_custom_homes(self):
         for key, folder in [('CLAUDE_CONFIG_DIR', 'claude'), ('CODEX_HOME', 'codex'),
                             ('COPILOT_HOME', 'copilot'), ('XDG_CONFIG_HOME', 'config'),
@@ -138,8 +164,8 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(result.stderr, '')
         self.assertTrue((self.home / 'gemini-root/.gemini/skills/my-test/SKILL.md').is_file())
 
-    def test_grok_opt_in_and_idempotent(self):
-        self.install('--tools=grok')
+    def test_grok_default_and_idempotent(self):
+        self.install()
         grok = self.home / '.grok'
         instructions = (grok / 'AGENTS.md').read_text()
         self.assertIn('Global rules', instructions)
@@ -179,9 +205,11 @@ class InstallerTests(unittest.TestCase):
         self.assertTrue(os.access(grok / 'statusline.sh', os.X_OK))
         self.assertFalse((grok / 'notify.sh').exists())
         self.assertFalse((grok / 'hooks' / 'notifications.json').exists())
-        self.assertFalse((self.home / '.claude').exists())
+        self.assertTrue((self.home / '.claude/CLAUDE.md').is_file())
+        for path in ['.codex', '.config/opencode', '.copilot', '.gemini', '.config/amp']:
+            self.assertFalse((self.home / path).exists(), path)
         before = self.snapshot()
-        self.install('--tools=grok')
+        self.install()
         self.assertEqual(before, self.snapshot())
 
     def test_grok_custom_home(self):
@@ -588,7 +616,7 @@ class InstallerTests(unittest.TestCase):
         (claude / 'skills').symlink_to(ROOT / '.claude/skills')
         (claude / 'agents').symlink_to(ROOT / '.claude/agents')
         (claude / 'output-styles').symlink_to(ROOT / '.claude/output-styles')
-        self.install()
+        self.install('--tools=claude,codex,opencode,copilot')
         self.assertTrue((claude / 'skills').is_dir())
         self.assertFalse((claude / 'skills').is_symlink())
         text = (codex / 'AGENTS.md').read_text()
@@ -602,7 +630,7 @@ class InstallerTests(unittest.TestCase):
         settings = json.loads((opencode / 'opencode.json').read_text())
         self.assertEqual(settings['instructions'], ['~/.agents/personas/my-humble-servant.md', 'extra.md'])
         before = self.snapshot()
-        self.install()
+        self.install('--tools=claude,codex,opencode,copilot')
         self.assertEqual(before, self.snapshot())
 
     def test_unmanaged_links_and_invalid_json(self):
@@ -651,13 +679,13 @@ class InstallerTests(unittest.TestCase):
             dest = self.home / ('.config/opencode' if harness == '.opencode' else harness) / folder
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.symlink_to(legacy)
-        self.install()
+        self.install('--tools=claude,codex,opencode,copilot')
         self.assertEqual((self.home / '.claude/skills/synced/runtime.txt').read_text(), 'runtime skill')
         for path in ['.claude/agents', '.claude/output-styles', '.config/opencode/agents']:
             self.assertEqual((self.home / path / 'custom.md').read_text(), 'custom runtime')
         self.assertEqual((fixture / '.claude/skills/synced/runtime.txt').read_text(), 'runtime skill')
         before = self.snapshot()
-        self.install()
+        self.install('--tools=claude,codex,opencode,copilot')
         self.assertEqual(before, self.snapshot())
 
     def test_failed_generated_render_keeps_existing_output(self):
@@ -993,7 +1021,7 @@ class InstallerTests(unittest.TestCase):
         own_skill = self.home / '.agents/skills/my-test'
         own_skill.mkdir()
         (own_skill / 'SKILL.md').write_text('custom same-name skill')
-        self.install()
+        self.install('--tools=claude,codex,opencode,copilot,grok')
         for target, content in files.items():
             self.assertEqual(target.read_bytes(), content)
         self.assertEqual((self.home / '.agents/backups/skills/my-test.bak/SKILL.md').read_text(),
@@ -1011,7 +1039,7 @@ class InstallerTests(unittest.TestCase):
         opencode.mkdir(parents=True)
         (opencode / 'agents').symlink_to(ROOT / '.opencode/agents')
         before = self.snapshot()
-        self.install('--dry-run')
+        self.install('--dry-run', '--tools=claude,codex,opencode,copilot')
         self.assertEqual(before, self.snapshot())
 
     def test_conflicting_claude_skill_link_backup_not_discovered(self):

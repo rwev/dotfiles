@@ -107,7 +107,7 @@ not imply equal capabilities or permission enforcement.
 Require Bash and jq. Run from this checkout:
 
 ```bash
-# Install shared content and the four default adapters.
+# Install shared content and the default Claude and Grok adapters.
 bash install.sh --agents-only
 
 # Preview without changing files.
@@ -116,11 +116,11 @@ bash install.sh --agents-only --dry-run
 # Install shared content only, for explicit loading.
 bash install.sh --agents-only --tools=universal
 
-# Install optional adapters and shared content.
-bash install.sh --agents-only --tools=gemini,amp
+# Add Codex to the default adapters.
+bash install.sh --agents-only --tools=claude,grok,codex
 
-# Install the optional official xAI Grok Build adapter.
-bash install.sh --agents-only --tools=grok
+# Install only the Gemini and Amp adapters and shared content.
+bash install.sh --agents-only --tools=gemini,amp
 
 # Install all seven adapters.
 bash install.sh --agents-only --tools=claude,codex,opencode,copilot,gemini,amp,grok
@@ -128,8 +128,13 @@ bash install.sh --agents-only --tools=claude,codex,opencode,copilot,gemini,amp,g
 
 `--agents-only` skips packages, shell changes, and unrelated dotfiles.
 `--tools` also selects adapters during the normal full bootstrap. Omit it to
-select Claude, Codex, OpenCode, and Copilot. Every selection installs the shared
-layer. Use `universal` alone. No common launch wrapper is installed.
+select Claude and Grok Build. Codex, OpenCode, Copilot, Gemini, and Amp install
+only when you list them. `--tools` replaces the default list. To keep Claude
+and Grok, list them too. Every selection installs the shared layer. Use
+`universal` alone. No common launch wrapper is installed.
+
+At the end of the agent step, the installer prints the installed harnesses and
+the excluded harnesses. A dry run prints the harnesses it would install.
 
 The installer honors `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, and `COPILOT_HOME`.
 OpenCode and Amp use `XDG_CONFIG_HOME`. `GEMINI_CLI_HOME` replaces Gemini's home
@@ -227,8 +232,9 @@ and makes no network requests. See
 Use native invocation syntax: `/my-commit` in Claude, `$my-commit` in Codex,
 or ask the CLI to use the named skill. Syntax depends on the harness.
 
-The four default adapters and Grok install `_my-implementer`, `_my-reviewer`,
-`_my-security-reviewer`, and `_my-explorer`. Reviewer profiles omit native
+The Claude, Codex, OpenCode, Copilot, and Grok adapters install
+`_my-implementer`, `_my-reviewer`, `_my-security-reviewer`, and
+`_my-explorer`. Reviewer profiles omit native
 edit tools or restrict edit permissions. Claude, OpenCode, and Copilot
 reviewers still have shell access, so they are read-only by instruction
 only. Those settings and prompts are not enforced filesystem isolation.
@@ -359,7 +365,7 @@ Check native discovery after installation:
 - Amp: inspect instruction sources and skill listings.
 - Grok: run `grok inspect --json` to inspect instructions, skills, and agents.
 
-Implementation validation passed the 53 isolated tests. Grok Build 1.0.50
+Implementation validation passed the 54 isolated tests. Grok Build 1.0.50
 discovered all thirteen skills and four native specialist definitions with
 default and custom homes. Active instructions contained one rules body and
 one persona when the Claude adapter was also installed. This passed with

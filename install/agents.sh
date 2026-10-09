@@ -278,6 +278,25 @@ install_optional() {
   fi
 }
 
+summarize_harnesses() {
+  local tool installed="" excluded="" example
+  for tool in claude codex opencode copilot gemini amp grok; do
+    if [[ ",$TOOLS," == *",$tool,"* ]]; then
+      installed+="${installed:+, }$tool"
+    else
+      excluded+="${excluded:+, }$tool"
+    fi
+  done
+  if $DRY_RUN; then
+    info "Would install harnesses: ${installed:-none (shared layer only)}"
+  else
+    success "Installed harnesses: ${installed:-none (shared layer only)}"
+  fi
+  info "Excluded harnesses: ${excluded:-none}"
+  example="${installed//, /,}"
+  [[ -z "$excluded" ]] || info "List excluded harnesses in --tools to install them, e.g. --tools=${example:+$example,}${excluded%%,*}"
+}
+
 install_agents() {
   local tool
   command -v jq &>/dev/null || { error "jq is required for agent installation"; return 1; }
@@ -293,4 +312,5 @@ install_agents() {
       amp) install_optional amp "$AMP_DIR" AGENTS.md ;;
     esac
   done
+  summarize_harnesses
 }

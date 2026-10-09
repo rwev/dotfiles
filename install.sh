@@ -7,7 +7,7 @@ DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DRY_RUN=false
 AGENTS_ONLY=false
 PREVIEW_MIGRATIONS=()
-TOOLS=claude,codex,opencode,copilot
+TOOLS=claude,grok
 PACKAGE_MANAGER=""
 
 for arg in "$@"; do
