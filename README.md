@@ -147,6 +147,7 @@ does not create duplicate Grok skill links.
 | `.agents/skills/my-*/SKILL.md`          | Thirteen portable workflows.                                   |
 | `.agents/personas/my-humble-servant.md` | Plain Markdown persona body.                                   |
 | `.agents/agents/_my-*.md`               | Three shared specialist instruction bodies.                    |
+| `.agents/references/progress.md`        | Durable-progress rules that the workflows cite.                |
 | `.claude/templates/`                    | Native role and output-style metadata, outside discovery.      |
 | `.opencode/templates/agents/`           | Native role metadata, outside discovery.                       |
 | `.copilot/agents/`                      | Native Copilot role metadata.                                  |
@@ -229,7 +230,10 @@ or ask the CLI to use the named skill. Syntax depends on the harness.
 The four default adapters and Grok install `_my-implementer`, `_my-reviewer`, and
 `_my-security-reviewer`. Reviewer profiles omit native edit tools or restrict
 edit permissions. Claude, OpenCode, and Copilot reviewers still have shell
-access; those settings and prompts are not enforced filesystem isolation.
+access, so they are read-only by instruction only. Those settings and prompts
+are not enforced filesystem isolation. OpenCode roles deny the `task` tool, so
+they cannot spawn an editing subagent. The Claude, Copilot, and Grok security
+reviewers also get web tools for CVE checks.
 Codex reviewer profiles request a native read-only sandbox. Parent runtime
 settings can affect the effective sandbox.
 Grok reviewer profiles omit shell and edit tools and disable MCP access.
@@ -241,15 +245,23 @@ See [Grok subagents](https://github.com/xai-org/grok-build/blob/main/crates/code
 `my-plan`, `my-build`, `my-security`, and `my-review` check required capabilities before work.
 They stop as unsupported when their required subagents or roles are absent.
 They do not replace independent review with self-review or sequential execution.
+In `my-build`, only the coordinator commits, after review approves.
+Implementers never commit; they list changed paths for explicit staging.
 Gemini and Amp adapters supply no specialist roles. `my-plan` needs actual
 independent exploration subagents even on those tools.
 
+Codex's `workspace-write` sandbox keeps `.agents`, `.git`, and `.codex`
+read-only. Sandboxed Codex sessions therefore cannot write run files under
+`.agents/work/` or commit without approval. Use another harness for those,
+or approve them in Codex outside `cxd`.
+
 ### Local overrides and migration
 
-Generated files are installed individually. Shared skills, rules, persona, and
-role sources are linked into `~/.agents`. Skill edits reach native discovery
-through live links. Rerun the installer after rule, persona, role, template, or
-runtime-default changes to regenerate native outputs and the manual export.
+Generated files are installed individually. Shared skills, references, rules,
+persona, and role sources are linked into `~/.agents`. Skill edits reach native
+discovery through live links. Rerun the installer after rule, persona, role,
+template, or runtime-default changes to regenerate native outputs and the
+manual export.
 
 Claude and OpenCode JSON settings are deep-merged with machine-local files.
 Local keys win; local arrays replace default arrays. Existing real settings

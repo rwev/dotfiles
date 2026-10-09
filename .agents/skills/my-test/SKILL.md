@@ -14,7 +14,7 @@ Run the tests relevant to the current change.
    repo actually uses. If the repo has more than one suite, run the ones
    relevant to what changed. Parallelize only when inputs and mutable
    resources are safe or isolated; otherwise run serially. Follow
-   [Scheduling](../../references/progress.md#scheduling). Standalone test
+   [Scheduling](~/.agents/references/progress.md#scheduling). Standalone test
    runs need no build run artifacts.
 2. If the user named a specific test or path, focus there. Otherwise run the
    tests covering the files changed in the working tree; fall back to the

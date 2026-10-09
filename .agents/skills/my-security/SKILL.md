@@ -18,21 +18,24 @@ and stop. Do not replace delegation with an inline audit or self-review.
 Target: the diff or area the user named. Default to the current working-tree
 diff (`git diff` plus staged) if nothing specific was named.
 
-Dispatch the `_my-security-reviewer` agent with that target. Require a
-read-only audit. Native permissions enforce only the restrictions that the
-harness supports. Prompt instructions are not a sandbox.
+Dispatch a fresh `_my-security-reviewer` agent with that target, with no
+conversation history forked or inherited from you. Require a read-only
+audit. Native permissions enforce only the restrictions that the harness
+supports. Prompt instructions are not a sandbox.
 
 1. Give it the target (diff range, or the file(s)/feature named) — it has no
    other context. Include anything it needs about what changed and why.
    Within its scope, it checks categories (injection, auth, secrets, input
    validation, output handling, crypto, dependencies, configuration).
 2. Relay its findings as-is: `file:line`, exploit scenario, severity, and
-   its final verdict (`Ship as-is` / `Ship with fixes` / `Do not ship`).
+   its final verdict (`Ship as-is` / `Ship with fixes` / `Do not ship` /
+   `Needs context`). On `Needs context`, supply the missing input and
+   resume the same reviewer if you can; otherwise relay its request.
 3. Do not apply fixes yourself unless I explicitly ask. Wait for my
    go-ahead before touching anything.
 
 For a large audit, use parallel reviewers for distinct target clusters when
-useful. Follow [Scheduling](../../references/progress.md#scheduling); avoid
-overlapping audits and keep evidence stable. As coordinator, merge findings
-and check cross-boundary auth and dataflow coverage. Standalone audits need
-no build run artifacts.
+useful. Follow [Scheduling](~/.agents/references/progress.md#scheduling);
+avoid overlapping audits and keep evidence stable. As coordinator, merge
+findings and check cross-boundary auth and dataflow coverage. Standalone
+audits need no build run artifacts.

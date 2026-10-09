@@ -15,15 +15,18 @@ Before building, check native subagents and both `_my-implementer` and
 `_my-reviewer` roles. If any are unavailable, report
 `Unsupported: my-build requires native subagents and both roles` and stop.
 Do not replace delegation with sequential inline work or self-review.
-Commit only if the user explicitly authorized commits. Otherwise keep all
-tasks uncommitted and review their working diffs, including untracked product
+Only you, the coordinator, commit. Commit only if the user explicitly
+authorized commits. Commit a task only after review approves; stage its
+implementer's `Files:` paths explicitly. Otherwise keep all tasks
+uncommitted and review their working diffs, including untracked product
 files.
 
-Follow [durable progress](../../references/progress.md) for run artifacts,
-checkpoint ownership, baselines, knowledge validation, and native recovery.
-Read that reference before starting or resuming work. Use its
-[Scheduling](../../references/progress.md#scheduling) and
-[Build loop detail](../../references/progress.md#build-loop-detail) rules.
+Follow [durable progress](~/.agents/references/progress.md) for run
+artifacts, checkpoint ownership, baselines, knowledge validation, and native
+recovery. Read that reference before starting or resuming work. Use its
+[Scheduling](~/.agents/references/progress.md#scheduling) and
+[Build loop detail](~/.agents/references/progress.md#build-loop-detail)
+rules.
 
 ## Phase checklist
 
@@ -36,12 +39,27 @@ Read that reference before starting or resuming work. Use its
 4. **Implement batch** — Dispatch `_my-implementer` for dependency-ready
    tasks under scheduling rules. Persist phases, claims, and IDs.
 5. **Join** — Join writers. Freeze review inputs. Run required shared checks.
-6. **Review** — Dispatch `_my-reviewer` (fresh for new/changed diffs).
-   Always review, even small tasks.
+6. **Review** — Dispatch a fresh `_my-reviewer` for each new or changed
+   diff. Resume the same reviewer only for an interrupted review or a
+   `Needs context` verdict on the same diff. Always review, even small tasks.
 7. **Fix loop** — On Critical/Important findings, resume the same implementer,
    then re-review. After two failed attempts on the same finding, ask.
-8. **Final review** — When all tasks are done, review the full range.
+8. **Final review** — When all tasks are done, review the full range over
+   the union of task-owned paths.
 9. **Hand off** — Point me at `my-pr`. Do not open the PR yourself.
+
+## Dispatch payloads
+
+Give each role a full brief; it has no other context.
+
+- `_my-implementer`: task text and requirements, global constraints, and
+  approval status (it never commits). Add the absolute run dir, its
+  checkpoint and progress-reference paths, relevant knowledge cards, owned
+  paths and resource limits, and a notice that it is not alone.
+- `_my-reviewer`: the same context, plus a `base..head` range if committed.
+  Otherwise supply the task baseline and the staged, unstaged, and untracked
+  changes scoped to its owned paths. Start it fresh, with no conversation
+  history forked or inherited from you.
 
 ## Rules
 
@@ -51,4 +69,6 @@ Read that reference before starting or resuming work. Use its
 - Persist run artifacts when the harness permits writes.
 - Do not pause between tasks to ask "should I continue?" Keep going until
   every task is done or something is blocked.
-- On `NEEDS_CONTEXT` or `BLOCKED`, follow the progress reference.
+- Follow the Build loop detail for `NEEDS_CONTEXT` (read its `Question:`),
+  `BLOCKED`, `DONE_WITH_CONCERNS`, and reviewer `Verdict: Needs context`.
+- Record each implementer's `Files:` in state.

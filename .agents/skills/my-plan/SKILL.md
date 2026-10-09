@@ -20,7 +20,7 @@ inline exploration for the required subagent.
 
 Do not edit product files or write code. When the harness permits writes,
 write only run artifacts under `.agents/work/`. Follow
-[durable progress](../../references/progress.md) for run selection,
+[durable progress](~/.agents/references/progress.md) for run selection,
 checkpoints, and fingerprint-validated knowledge. Load a linked or
 unambiguous matching run before new exploration. Reuse its decisions and
 validate relevant cards before trusting them.
@@ -30,7 +30,7 @@ exploration handoff for `my-build` to persist at startup.
 
 1. Use a narrowly scoped native explorer; add others for useful independent
    questions. Follow
-   [Scheduling](../../references/progress.md#scheduling) for distinct
+   [Scheduling](~/.agents/references/progress.md#scheduling) for distinct
    questions and stable evidence; do not repeat an investigation. Resume the
    recorded explorer for each scope. Follow recovery rules before replacement.
    Give each explorer the full task context and its scope. Have it report
