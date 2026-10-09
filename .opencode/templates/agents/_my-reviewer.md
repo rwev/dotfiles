@@ -9,4 +9,5 @@ permission:
     "git checkout*": deny
     "git reset*": deny
     "git stash*": deny
+  task: deny
 ---

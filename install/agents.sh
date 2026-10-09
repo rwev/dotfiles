@@ -174,6 +174,7 @@ install_shared_agents() {
   link_file "$DOTFILES_DIR/.agents/AGENTS.md" "$HOME/.agents/AGENTS.md"
   ensure_directory "$HOME/.agents/personas"
   link_file "$DOTFILES_DIR/.agents/personas/my-humble-servant.md" "$HOME/.agents/personas/my-humble-servant.md"
+  link_file "$DOTFILES_DIR/.agents/references" "$HOME/.agents/references"
   ensure_directory "$HOME/.agents/agents"
   for src in "$DOTFILES_DIR"/.agents/agents/_my-*.md; do
     link_file "$src" "$HOME/.agents/agents/$(basename "$src")"

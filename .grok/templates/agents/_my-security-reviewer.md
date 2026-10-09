@@ -1,7 +1,7 @@
 ---
 name: _my-security-reviewer
 description: Audits a supplied diff or named code area for security vulnerabilities. Supply the task requirements, baseline, full diff and test results. Cannot run git or tests; request missing context. Read-only; no shell, edit, or MCP tools.
-tools: read_file, grep, list_dir, todo_write
+tools: read_file, grep, list_dir, todo_write, web_search
 disallowedTools: search_tool, use_tool
 mcpInheritance: none
 ---

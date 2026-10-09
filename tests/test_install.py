@@ -156,7 +156,11 @@ class InstallerTests(unittest.TestCase):
             _, header, body = text.split('---', 2)
             metadata = dict(line.split(': ', 1) for line in header.strip().splitlines())
             self.assertEqual(metadata['name'], name)
-            expected_tools = read_tools | {'search_replace', 'bash'} if role == 'implementer' else read_tools
+            expected_tools = {
+                'implementer': read_tools | {'search_replace', 'run_terminal_cmd'},
+                'reviewer': read_tools,
+                'security-reviewer': read_tools | {'web_search'},
+            }[role]
             self.assertEqual(set(metadata['tools'].split(', ')), expected_tools)
             if role != 'implementer':
                 self.assertEqual(set(metadata['disallowedTools'].split(', ')), {'search_tool', 'use_tool'})
@@ -785,6 +789,46 @@ class InstallerTests(unittest.TestCase):
         self.assertNotIn('sandbox_mode', config)
         self.install('--tools=codex')
         self.assertEqual(config_file.read_text(), text)
+
+    def test_shared_references_link_preserves_existing_directory(self):
+        references = self.home / '.agents/references'
+        references.mkdir(parents=True)
+        (references / 'progress.md').write_text('custom\n')
+        self.install('--tools=universal')
+        self.assertTrue(references.is_symlink())
+        self.assertEqual(os.readlink(references), str(ROOT / '.agents/references'))
+        self.assertTrue((references / 'progress.md').is_file())
+        self.assertEqual((self.home / '.agents/references.bak/progress.md').read_text(), 'custom\n')
+        before = self.snapshot()
+        self.install('--tools=universal')
+        self.assertEqual(before, self.snapshot())
+
+    def test_harness_agent_metadata(self):
+        self.install('--tools=claude,opencode,copilot,grok')
+
+        def frontmatter(path):
+            header = path.read_text().split('---', 2)[1]
+            fields = dict(line.split(': ', 1) for line in header.strip().splitlines()
+                          if ': ' in line and not line.startswith(' '))
+            return fields, header
+
+        for role in ['implementer', 'reviewer', 'security-reviewer']:
+            name = '_my-' + role
+            canonical = frontmatter(ROOT / '.agents/agents' / (name + '.md'))[0]['description']
+            claude = frontmatter(self.home / '.claude/agents' / (name + '.md'))[0]
+            copilot = frontmatter(self.home / '.copilot/agents' / (name + '.agent.md'))[0]
+            opencode, opencode_header = frontmatter(self.home / '.config/opencode/agents' / (name + '.md'))
+            for fields in [claude, copilot, opencode]:
+                self.assertEqual(fields['description'], canonical)
+            claude_tools = set(claude['tools'].split(', '))
+            copilot_tools = set(json.loads(copilot['tools']))
+            self.assertNotIn('TodoWrite', claude_tools)
+            self.assertEqual({'WebFetch', 'WebSearch'} <= claude_tools, role == 'security-reviewer')
+            self.assertEqual('web' in copilot_tools, role == 'security-reviewer')
+            self.assertIn('\n  task: deny\n', opencode_header)
+        grok = frontmatter(self.home / '.grok/agents/_my-implementer.md')[0]
+        self.assertEqual(grok['description'],
+                         frontmatter(ROOT / '.agents/agents/_my-implementer.md')[0]['description'])
 
     def test_json_with_existing_local_is_backed_up(self):
         directory = self.home / '.claude'
