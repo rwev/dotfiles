@@ -40,13 +40,19 @@ Use this reference from `my-build` and related skills.
 - On `NEEDS_CONTEXT`: resolve low-stakes questions yourself; ask only when
   importance and rework cost are both high.
 - On `BLOCKED`: stop and report the technical failure.
+- On `DONE_WITH_CONCERNS`: read the concerns. Resolve them, or send them to
+  review as findings.
+- On reviewer `Verdict: Needs context`: supply the missing context, then
+  resume the same reviewer.
 - Join writers and freeze review inputs before review or shared checks.
 - Loop Critical/Important findings through the same implementer, then a fresh
   reviewer. After two failed fix attempts on the same finding, ask rather than
   retry silently.
 - Mark a task completed only after tests pass and review approves.
-- When commits are authorized, the coordinator commits serially after writers
-  stop and reviews approve.
+- Only the coordinator commits. Implementers never stage or commit; they
+  report changed paths in `Files:`. When commits are authorized, stage those
+  paths explicitly and commit serially after writers stop and review approves.
+  Write a concise conventional-commit message scoped to the task.
 
 ## Scheduling
 
@@ -63,8 +69,8 @@ Use this reference from `my-build` and related skills.
   claimant stops. Hold claims until agents and tool writers are confirmed stopped.
 - On resume, recover running or unknown agents before new dispatch.
 - Disjoint tasks may share a tree; do not create worktrees or change native
-  settings automatically. Parallel workers must not stage, commit, checkout,
-  branch, reset, or stash. The coordinator alone commits with authorization,
+  settings automatically. Subagents must not stage, commit, checkout, branch,
+  reset, or stash. The coordinator alone commits with authorization,
   serially, after all writers stop and reviews approve.
 - Join and freeze batch writers before review or shared verification. Scope
   task baselines/diffs to owned product paths and supplied context, not peer work.
