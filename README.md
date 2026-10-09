@@ -86,16 +86,12 @@ See the [Agent Skills specification](https://agentskills.io/specification) and
 | Codex         | `~/.codex/AGENTS.md`                         | Reads `~/.agents/skills`. [Docs](https://learn.chatgpt.com/docs/build-skills).                                         |
 | OpenCode      | `~/.config/opencode/AGENTS.md`               | Reads `~/.agents/skills`. [Docs](https://opencode.ai/docs/skills/).                                                    |
 | Copilot CLI   | `~/.copilot/copilot-instructions.md`         | Reads `~/.agents/skills`. [Docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills). |
-| Gemini CLI    | `~/.gemini/GEMINI.md`                        | Reads `~/.agents/skills`. [Docs](https://geminicli.com/docs/cli/skills/).                                              |
-| Amp           | `~/.config/amp/AGENTS.md`                    | Reads `~/.agents/skills`. [Docs](https://ampcode.com/docs/customize/skills).                                           |
 | Grok Build    | `~/.grok/AGENTS.md`                          | Reads `~/.agents/skills`. [Docs](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md). |
 
 Native instruction loading differs. See [Claude memory](https://code.claude.com/docs/en/memory),
 [Codex AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md),
 [OpenCode rules](https://opencode.ai/docs/rules/),
-[Copilot instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions),
-[Gemini context](https://geminicli.com/docs/cli/gemini-md/), and
-[Amp instructions](https://ampcode.com/docs/customize/agents-md), and
+[Copilot instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions), and
 [Grok project rules](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/12-project-rules.md).
 
 Personas and specialist roles have no common discovery format. Their prompt
@@ -119,17 +115,14 @@ bash install.sh --agents-only --tools=universal
 # Add Codex to the default adapters.
 bash install.sh --agents-only --tools=claude,grok,codex
 
-# Install only the Gemini and Amp adapters and shared content.
-bash install.sh --agents-only --tools=gemini,amp
-
-# Install all seven adapters.
-bash install.sh --agents-only --tools=claude,codex,opencode,copilot,gemini,amp,grok
+# Install all five adapters.
+bash install.sh --agents-only --tools=claude,codex,opencode,copilot,grok
 ```
 
 `--agents-only` skips packages, shell changes, and unrelated dotfiles.
 `--tools` also selects adapters during the normal full bootstrap. Omit it to
-select Claude and Grok Build. Codex, OpenCode, Copilot, Gemini, and Amp install
-only when you list them. `--tools` replaces the default list. To keep Claude
+select Claude and Grok Build. Codex, OpenCode, and Copilot install only when
+you list them. `--tools` replaces the default list. To keep Claude
 and Grok, list them too. Every selection installs the shared layer. Use
 `universal` alone. No common launch wrapper is installed.
 
@@ -137,9 +130,7 @@ At the end of the agent step, the installer prints the installed harnesses and
 the excluded harnesses. A dry run prints the harnesses it would install.
 
 The installer honors `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, and `COPILOT_HOME`.
-OpenCode and Amp use `XDG_CONFIG_HOME`. `GEMINI_CLI_HOME` replaces Gemini's home
-root: its config destination is `$GEMINI_CLI_HOME/.gemini`, not the variable
-itself. A custom Gemini home also receives individual native skill links.
+OpenCode uses `XDG_CONFIG_HOME`.
 Grok Build uses `GROK_HOME` directly, with `~/.grok` as the default. It still
 reads shared skills from `~/.agents/skills` with a custom home. The installer
 does not create duplicate Grok skill links.
@@ -170,11 +161,11 @@ The default persona is `my-humble-servant`. Each adapter supplies it once:
 
 - Claude uses a generated native output style; global instructions contain rules only.
 - OpenCode loads the neutral persona through its `instructions` setting.
-- Codex, Copilot, Gemini, Amp, and Grok receive rules plus the persona in global instructions.
+- Codex, Copilot, and Grok receive rules plus the persona in global instructions.
 
 Existing model, reasoning, permission, memory, plugin, and UI defaults stay in
-place. Copilot, Gemini, and Amp keep vendor runtime defaults. The installer adds
-no authentication or model configuration for them.
+place. Copilot keeps vendor runtime defaults. The installer adds no
+authentication or model configuration for it.
 
 ### Grok runtime
 
@@ -261,8 +252,6 @@ They stop as unsupported when their required subagents or roles are absent.
 They do not replace independent review with self-review or sequential execution.
 In `my-build`, only the coordinator commits, after review approves.
 Implementers never commit; they list changed paths for explicit staging.
-Gemini and Amp adapters supply no specialist roles, so these four workflows
-are unsupported there.
 
 Codex's `workspace-write` sandbox keeps `.agents`, `.git`, and `.codex`
 read-only. Sandboxed Codex sessions therefore cannot write run files under
@@ -306,8 +295,6 @@ Global instruction overrides are appended from these machine-local files:
 | Codex         | `~/.codex/AGENTS.local.md`                                |
 | OpenCode      | `~/.config/opencode/AGENTS.local.md`                      |
 | Copilot CLI   | `~/.copilot/copilot-instructions.local.md`                |
-| Gemini CLI    | `~/.gemini/GEMINI.local.md`                               |
-| Amp           | `~/.config/amp/AGENTS.local.md`                           |
 | Grok Build    | `~/.grok/AGENTS.local.md`                                 |
 
 These paths follow custom native homes when set. Pre-existing unmanaged global
@@ -361,8 +348,6 @@ Check native discovery after installation:
 - Claude: inspect `/memory`, `/context`, and available skills.
 - Codex: inspect loaded instructions and `/skills`.
 - Copilot: inspect `/instructions`, `copilot skill list`, and custom agents.
-- Gemini: inspect `/memory show` and skill discovery.
-- Amp: inspect instruction sources and skill listings.
 - Grok: run `grok inspect --json` to inspect instructions, skills, and agents.
 
 Implementation validation passed the 54 isolated tests. Grok Build 1.0.50
@@ -378,9 +363,8 @@ remain unverified.
 All four generated Codex profiles parsed as TOML. Codex 0.160.1
 `codex doctor --json` accepted the explorer profile, including
 `web_search = "live"`, in an isolated home. Actual specialist execution and
-interactive Claude discovery remain unverified. OpenCode, Copilot, Gemini, and
-Amp were not installed on the validation machine, so their runtime discovery
-is unverified.
+interactive Claude discovery remain unverified. OpenCode and Copilot were not
+installed on the validation machine, so their runtime discovery is unverified.
 
 ## File layout
 

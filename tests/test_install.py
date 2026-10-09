@@ -55,7 +55,7 @@ class InstallerTests(unittest.TestCase):
         self.home.mkdir()
         self.env = {k: v for k, v in os.environ.items() if k not in {
             'CLAUDE_CONFIG_DIR', 'CODEX_HOME', 'COPILOT_HOME', 'XDG_CONFIG_HOME',
-            'GEMINI_CLI_HOME', 'GROK_HOME', 'XDG_DATA_HOME'}}
+            'GROK_HOME', 'XDG_DATA_HOME'}}
         self.env['HOME'] = str(self.home)
         self.root = ROOT
 
@@ -107,12 +107,13 @@ class InstallerTests(unittest.TestCase):
         for arg in ['--bogus', '--tools=', '--tools=bad', '--tools=claude,', '--tools=universal,codex']:
             self.install(arg, ok=False)
             self.assertEqual(self.snapshot(), {})
+        for tool in ['gemini', 'amp']:
+            result = self.install('--tools=claude,' + tool, ok=False)
+            self.assertEqual(result.stderr, f'Unknown tool: {tool}\n')
+            self.assertEqual(self.snapshot(), {})
         self.install('--tools=universal')
         self.assertTrue((self.home / '.agents/exports/default.md').exists())
         self.assertFalse((self.home / '.codex').exists())
-        self.install('--tools=gemini,amp')
-        self.assertIn('## Address', (self.home / '.gemini/GEMINI.md').read_text())
-        self.assertIn('Unsupported', (self.home / '.config/amp/AGENTS.md').read_text())
         self.assertFalse((self.home / '.claude').exists())
 
     def test_dry_run(self):
@@ -120,23 +121,23 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(self.snapshot(), {})
         self.install()
         before = self.snapshot()
-        self.install('--dry-run', '--tools=gemini,amp')
+        self.install('--dry-run', '--tools=codex,copilot')
         self.assertEqual(before, self.snapshot())
 
     def test_harness_summary(self):
         hint = 'List excluded harnesses in --tools to install them, e.g. --tools='
         for args, installed, excluded, example in [
             ((), 'Installed harnesses: claude, grok',
-             'Excluded harnesses: codex, opencode, copilot, gemini, amp', 'claude,grok,codex'),
+             'Excluded harnesses: codex, opencode, copilot', 'claude,grok,codex'),
             (('--dry-run',), 'Would install harnesses: claude, grok',
-             'Excluded harnesses: codex, opencode, copilot, gemini, amp', 'claude,grok,codex'),
+             'Excluded harnesses: codex, opencode, copilot', 'claude,grok,codex'),
             (('--tools=grok,codex',), 'Installed harnesses: codex, grok',
-             'Excluded harnesses: claude, opencode, copilot, gemini, amp', 'codex,grok,claude'),
-            (('--tools=claude,codex,opencode,copilot,gemini,amp',),
-             'Installed harnesses: claude, codex, opencode, copilot, gemini, amp',
-             'Excluded harnesses: grok', 'claude,codex,opencode,copilot,gemini,amp,grok'),
+             'Excluded harnesses: claude, opencode, copilot', 'codex,grok,claude'),
+            (('--tools=claude,codex,opencode,copilot',),
+             'Installed harnesses: claude, codex, opencode, copilot',
+             'Excluded harnesses: grok', 'claude,codex,opencode,copilot,grok'),
             (('--tools=universal',), 'Installed harnesses: none (shared layer only)',
-             'Excluded harnesses: claude, codex, opencode, copilot, gemini, amp, grok', 'claude'),
+             'Excluded harnesses: claude, codex, opencode, copilot, grok', 'claude'),
         ]:
             with self.subTest(args=args):
                 output = self.install(*args).stdout
@@ -144,25 +145,23 @@ class InstallerTests(unittest.TestCase):
                 self.assertEqual(output.count(excluded + '\n'), 1)
                 self.assertEqual(output.count(hint), 1)
                 self.assertIn(hint + example + '\n', output)
-        output = self.install('--tools=claude,codex,opencode,copilot,gemini,amp,grok').stdout
-        self.assertIn('Installed harnesses: claude, codex, opencode, copilot, gemini, amp, grok', output)
+        output = self.install('--tools=claude,codex,opencode,copilot,grok').stdout
+        self.assertIn('Installed harnesses: claude, codex, opencode, copilot, grok', output)
         self.assertIn('Excluded harnesses: none', output)
         self.assertNotIn(hint, output)
 
     def test_custom_homes(self):
         for key, folder in [('CLAUDE_CONFIG_DIR', 'claude'), ('CODEX_HOME', 'codex'),
-                            ('COPILOT_HOME', 'copilot'), ('XDG_CONFIG_HOME', 'config'),
-                            ('GEMINI_CLI_HOME', 'gemini-root')]:
+                            ('COPILOT_HOME', 'copilot'), ('XDG_CONFIG_HOME', 'config')]:
             self.env[key] = str(self.home / folder)
-        self.install('--tools=claude,codex,opencode,copilot,gemini,amp')
+        self.install('--tools=claude,codex,opencode,copilot')
         for path in ['claude/CLAUDE.md', 'codex/AGENTS.md', 'copilot/copilot-instructions.md',
-                     'config/opencode/AGENTS.md', 'config/amp/AGENTS.md', 'gemini-root/.gemini/GEMINI.md']:
+                     'config/opencode/AGENTS.md']:
             self.assertTrue((self.home / path).is_file(), path)
         settings = json.loads((self.home / 'claude/settings.json').read_text())
         result = subprocess.run(['bash', '-c', "printf '%s' " + settings['statusLine']['command']], capture_output=True, text=True)
         self.assertEqual(result.stdout, str(self.home / 'claude/statusline.sh'))
         self.assertEqual(result.stderr, '')
-        self.assertTrue((self.home / 'gemini-root/.gemini/skills/my-test/SKILL.md').is_file())
 
     def test_grok_default_and_idempotent(self):
         self.install()
@@ -170,7 +169,6 @@ class InstallerTests(unittest.TestCase):
         instructions = (grok / 'AGENTS.md').read_text()
         self.assertIn('Global rules', instructions)
         self.assertEqual(instructions.count('## Address'), 1)
-        self.assertNotIn('Unsupported workflows', instructions)
         self.assertIn('Supply the full diff and test results', instructions)
         self.assertIn('cannot run git or tests', instructions)
         self.assertEqual(tomllib.loads((grok / 'config.toml').read_text()),
@@ -206,7 +204,7 @@ class InstallerTests(unittest.TestCase):
         self.assertFalse((grok / 'notify.sh').exists())
         self.assertFalse((grok / 'hooks' / 'notifications.json').exists())
         self.assertTrue((self.home / '.claude/CLAUDE.md').is_file())
-        for path in ['.codex', '.config/opencode', '.copilot', '.gemini', '.config/amp']:
+        for path in ['.codex', '.config/opencode', '.copilot']:
             self.assertFalse((self.home / path).exists(), path)
         before = self.snapshot()
         self.install()

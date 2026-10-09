@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Dotfiles installer
-# Usage: bash install.sh [--dry-run] [--agents-only] [--tools=claude,codex,opencode,copilot,gemini,amp,grok]
+# Usage: bash install.sh [--dry-run] [--agents-only] [--tools=claude,codex,opencode,copilot,grok]
 set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,7 +24,7 @@ done
 IFS=, read -r -a SELECTED_TOOLS <<< "$TOOLS"
 for tool in "${SELECTED_TOOLS[@]}"; do
   case "$tool" in
-    claude|codex|opencode|copilot|gemini|amp|grok) ;;
+    claude|codex|opencode|copilot|grok) ;;
     universal) [[ "$TOOLS" == universal ]] || { printf 'universal must be used alone\n' >&2; exit 1; } ;;
     *) printf 'Unknown tool: %s\n' "$tool" >&2; exit 1 ;;
   esac
@@ -33,8 +33,6 @@ CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 CODEX_DIR="${CODEX_HOME:-$HOME/.codex}"
 COPILOT_DIR="${COPILOT_HOME:-$HOME/.copilot}"
 OPENCODE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
-AMP_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/amp"
-GEMINI_DIR="${GEMINI_CLI_HOME:-$HOME}/.gemini"
 GROK_DIR="${GROK_HOME:-$HOME/.grok}"
 
 source "$DOTFILES_DIR/install/common.sh"
