@@ -226,6 +226,3 @@ alias cldr='claude --resume --dangerously-skip-permissions'     # pick a session
 alias grk='grok --always-approve'
 alias grkc='grok --continue --always-approve'
 alias grkr='grok --resume --always-approve'
-
-# Codex — skip approval prompts. The configured sandbox stays on.
-alias cxd='codex --ask-for-approval never'

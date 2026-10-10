@@ -74,9 +74,8 @@ merge_json_file() {
   fi
 }
 
-# Add tracked Codex defaults without replacing values written by Codex itself
-# (for example, /model, /theme, and /statusline choices).
-codex_config_has_key() {
+# Add missing bare-table TOML defaults and keep existing values.
+toml_config_has_key() {
   local file="$1" section="$2" key="$3"
   awk -v wanted_section="$section" -v wanted_key="$key" '
     /^[[:space:]]*\[[^]]+\]/ {
@@ -90,7 +89,7 @@ codex_config_has_key() {
   ' "$file"
 }
 
-codex_insert_default() {
+toml_insert_default() {
   DOTFILES_TOML_DEFAULT="$3" awk -v section="$2" '
     BEGIN { line = ENVIRON["DOTFILES_TOML_DEFAULT"] }
     /^[[:space:]]*\[[^]]+\][[:space:]]*(#.*)?$/ {
@@ -112,51 +111,6 @@ codex_insert_default() {
       }
     }
   ' "$1"
-}
-
-install_codex_config() {
-  local dest="${1:-$HOME/.codex/config.toml}"
-  local src="$DOTFILES_DIR/.codex/config.toml"
-  local section="" key line tmp
-
-  ensure_directory "$(dirname "$dest")"
-  if [[ -L "$dest" ]] && ! $DRY_RUN; then
-    local saved=""
-    [[ ! -f "$dest" ]] || saved="$(cat "$dest")"
-    backup_file "$dest"
-    [[ -z "$saved" ]] || printf '%s\n' "$saved" > "$dest"
-  fi
-  if [[ ! -e "$dest" ]]; then
-    info "Installing $dest"
-    run cp "$src" "$dest"
-    return
-  fi
-
-  while IFS= read -r line; do
-    if [[ "$line" =~ ^\[([a-z_]+)\]$ ]]; then
-      section="${BASH_REMATCH[1]}"
-      continue
-    fi
-    [[ "$line" =~ ^([a-z_]+)[[:space:]]*= ]] || continue
-    key="${BASH_REMATCH[1]}"
-    codex_config_has_key "$dest" "$section" "$key" && continue
-    if [[ "$key" == sandbox_mode ]] && codex_config_has_key "$dest" "" default_permissions; then
-      continue
-    fi
-
-    local setting_name="$key"
-    [[ -z "$section" ]] || setting_name="$section.$key"
-    info "Adding Codex default $setting_name to $dest"
-    if $DRY_RUN; then
-      continue
-    fi
-    tmp="$(mktemp "${dest}.tmp.XXXXXX")"
-    if ! codex_insert_default "$dest" "$section" "$line" > "$tmp"; then
-      rm "$tmp"
-      return 1
-    fi
-    mv "$tmp" "$dest"
-  done < "$src"
 }
 
 # The bare-table helpers cannot safely merge alternate TOML forms.
@@ -238,14 +192,14 @@ install_grok_config() {
         [[ "$continuation" =~ ^[[:space:]]*\][[:space:]]*$ ]] && break
       done
     fi
-    codex_config_has_key "$dest" "$section" "$key" && continue
+    toml_config_has_key "$dest" "$section" "$key" && continue
     if [[ "$section" == ui.status_line && "$key" == command && -n "$status_command" ]]; then
       line="command = $status_command"
     fi
     info "Adding Grok default $section.$key to $dest"
     $DRY_RUN && continue
     tmp="$(mktemp "${dest}.tmp.XXXXXX")"
-    if ! codex_insert_default "$dest" "$section" "$line" > "$tmp"; then
+    if ! toml_insert_default "$dest" "$section" "$line" > "$tmp"; then
       rm "$tmp"
       return 1
     fi

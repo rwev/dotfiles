@@ -83,13 +83,11 @@ See the [Agent Skills specification](https://agentskills.io/specification) and
 | CLI           | Global instruction destination               | Shared skill discovery                                                                                                 |
 | ------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Claude Code   | `~/.claude/CLAUDE.md`                        | Installer links skills into `~/.claude/skills`. [Docs](https://code.claude.com/docs/en/skills).                        |
-| Codex         | `~/.codex/AGENTS.md`                         | Reads `~/.agents/skills`. [Docs](https://learn.chatgpt.com/docs/build-skills).                                         |
 | OpenCode      | `~/.config/opencode/AGENTS.md`               | Reads `~/.agents/skills`. [Docs](https://opencode.ai/docs/skills/).                                                    |
 | Copilot CLI   | `~/.copilot/copilot-instructions.md`         | Reads `~/.agents/skills`. [Docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills). |
 | Grok Build    | `~/.grok/AGENTS.md`                          | Reads `~/.agents/skills`. [Docs](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/08-skills.md). |
 
 Native instruction loading differs. See [Claude memory](https://code.claude.com/docs/en/memory),
-[Codex AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md),
 [OpenCode rules](https://opencode.ai/docs/rules/),
 [Copilot instructions](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions), and
 [Grok project rules](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/12-project-rules.md).
@@ -112,16 +110,13 @@ bash install.sh --agents-only --dry-run
 # Install shared content only, for explicit loading.
 bash install.sh --agents-only --tools=universal
 
-# Add Codex to the default adapters.
-bash install.sh --agents-only --tools=claude,grok,codex
-
-# Install all five adapters.
-bash install.sh --agents-only --tools=claude,codex,opencode,copilot,grok
+# Install all four adapters.
+bash install.sh --agents-only --tools=claude,opencode,copilot,grok
 ```
 
 `--agents-only` skips packages, shell changes, and unrelated dotfiles.
 `--tools` also selects adapters during the normal full bootstrap. Omit it to
-select Claude and Grok Build. Codex, OpenCode, and Copilot install only when
+select Claude and Grok Build. OpenCode and Copilot install only when
 you list them. `--tools` replaces the default list. To keep Claude
 and Grok, list them too. Every selection installs the shared layer. Use
 `universal` alone. No common launch wrapper is installed.
@@ -129,7 +124,7 @@ and Grok, list them too. Every selection installs the shared layer. Use
 At the end of the agent step, the installer prints the installed harnesses and
 the excluded harnesses. A dry run prints the harnesses it would install.
 
-The installer honors `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, and `COPILOT_HOME`.
+The installer honors `CLAUDE_CONFIG_DIR` and `COPILOT_HOME`.
 OpenCode uses `XDG_CONFIG_HOME`.
 Grok Build uses `GROK_HOME` directly, with `~/.grok` as the default. It still
 reads shared skills from `~/.agents/skills` with a custom home. The installer
@@ -149,7 +144,6 @@ does not create duplicate Grok skill links.
 | `.copilot/agents/`                      | Native Copilot role metadata.                                  |
 | `.claude/settings.json`                 | Existing Claude runtime defaults and statusline wiring.        |
 | `.opencode/opencode.json`               | Existing permissions and neutral persona instruction path.     |
-| `.codex/config.toml`                    | Existing Codex runtime defaults.                               |
 | `.grok/templates/agents/`               | Native Grok specialist metadata, outside discovery.            |
 | `.grok/config.toml`                     | Grok runtime defaults and command statusline wiring.           |
 | `.grok/statusline.sh`                   | Model, effort, project, branch, context use, and session cost. |
@@ -161,7 +155,7 @@ The default persona is `my-humble-servant`. Each adapter supplies it once:
 
 - Claude uses a generated native output style; global instructions contain rules only.
 - OpenCode loads the neutral persona through its `instructions` setting.
-- Codex, Copilot, and Grok receive rules plus the persona in global instructions.
+- Copilot and Grok receive rules plus the persona in global instructions.
 
 Existing model, reasoning, permission, memory, plugin, and UI defaults stay in
 place. Copilot keeps vendor runtime defaults. The installer adds no
@@ -220,10 +214,10 @@ and makes no network requests. See
 | `my-tidy`                | Clean the current diff without behavior changes. |
 | `my-wip`                 | Save work in a labeled stash.                    |
 
-Use native invocation syntax: `/my-commit` in Claude, `$my-commit` in Codex,
-or ask the CLI to use the named skill. Syntax depends on the harness.
+Use native invocation syntax: `/my-commit` in Claude, or ask the CLI to use
+the named skill. Syntax depends on the harness.
 
-The Claude, Codex, OpenCode, Copilot, and Grok adapters install
+The Claude, OpenCode, Copilot, and Grok adapters install
 `_my-implementer`, `_my-reviewer`, `_my-security-reviewer`, and
 `_my-explorer`. Reviewer profiles omit native
 edit tools or restrict edit permissions. Claude, OpenCode, and Copilot
@@ -232,8 +226,6 @@ only. Those settings and prompts are not enforced filesystem isolation.
 OpenCode roles deny the `task` tool, so
 they cannot spawn an editing subagent. The Claude, Copilot, and Grok security
 reviewers also get web tools for CVE checks.
-Codex reviewer profiles request a native read-only sandbox. Parent runtime
-settings can affect the effective sandbox.
 Grok reviewer profiles omit shell and edit tools and disable MCP access.
 Supply the full diff, test results, task requirements, and task baseline when
 you dispatch a Grok reviewer. It cannot run Git commands or tests. These tool
@@ -243,20 +235,15 @@ See [Grok subagents](https://github.com/xai-org/grok-build/blob/main/crates/code
 `my-plan` dispatches `_my-explorer` for read-only code and web research. Each
 harness that installs it gives it read, search, shell, and web tools.
 Explorer profiles omit native edit tools or restrict edit permissions. It is
-read-only by instruction on Claude, OpenCode, Copilot, and Grok. Codex
-requests a read-only sandbox and live web search for it. The Grok explorer profile disables MCP access. Grok
-`web_fetch` works only when `features.web_fetch` is on.
+read-only by instruction on Claude, OpenCode, Copilot, and Grok. The Grok
+explorer profile disables MCP access. Grok `web_fetch` works only when
+`features.web_fetch` is on.
 
 `my-plan`, `my-build`, `my-security`, and `my-review` check required capabilities before work.
 They stop as unsupported when their required subagents or roles are absent.
 They do not replace independent review with self-review or sequential execution.
 In `my-build`, only the coordinator commits, after review approves.
 Implementers never commit; they list changed paths for explicit staging.
-
-Codex's `workspace-write` sandbox keeps `.agents`, `.git`, and `.codex`
-read-only. Sandboxed Codex sessions therefore cannot write run files under
-`.agents/work/` or commit without approval. Use another harness for those,
-or approve them in Codex outside `cxd`.
 
 ### Local overrides and migration
 
@@ -270,9 +257,8 @@ Claude and OpenCode JSON settings are deep-merged with machine-local files.
 Local keys win; local arrays replace default arrays. Existing real settings
 are captured on first installation. Edit `~/.claude/settings.local.json` or
 `~/.config/opencode/opencode.local.json`, then rerun the installer.
-Codex fills only missing TOML defaults. Existing values remain in place.
 
-Grok also keeps existing values, including an explicit `agents = true`.
+Grok keeps existing values, including an explicit `agents = true`.
 That value, or `GROK_CLAUDE_AGENTS_ENABLED=true`, can restore duplicate Claude
 global instructions. Grok config updates support bare TOML tables and keys.
 Configs with quoted table or key names remain unchanged, including escaped
@@ -292,7 +278,6 @@ Global instruction overrides are appended from these machine-local files:
 | CLI           | Local instruction file                                    |
 | ------------- | --------------------------------------------------------- |
 | Claude Code   | `~/.claude/CLAUDE.local.md`                               |
-| Codex         | `~/.codex/AGENTS.local.md`                                |
 | OpenCode      | `~/.config/opencode/AGENTS.local.md`                      |
 | Copilot CLI   | `~/.copilot/copilot-instructions.local.md`                |
 | Grok Build    | `~/.grok/AGENTS.local.md`                                 |
@@ -309,8 +294,7 @@ Unrelated skills and runtime files remain untouched.
 
 Existing shell aliases are unchanged: `cld` runs
 `claude --dangerously-skip-permissions`; `cldc` continues a session; `cldr`
-selects one to resume. `cxd` runs Codex with `--ask-for-approval never`.
-None of these aliases disable a sandbox.
+selects one to resume. None of these aliases disable a sandbox.
 
 ### Manual loading for other tools
 
@@ -346,11 +330,10 @@ PATH and send no network requests.
 Check native discovery after installation:
 
 - Claude: inspect `/memory`, `/context`, and available skills.
-- Codex: inspect loaded instructions and `/skills`.
 - Copilot: inspect `/instructions`, `copilot skill list`, and custom agents.
 - Grok: run `grok inspect --json` to inspect instructions, skills, and agents.
 
-Implementation validation passed the 54 isolated tests. Grok Build 1.0.50
+Implementation validation passed the 52 isolated tests. Grok Build 1.0.50
 discovered all thirteen skills and four native specialist definitions with
 default and custom homes. Active instructions contained one rules body and
 one persona when the Claude adapter was also installed. This passed with
@@ -359,12 +342,9 @@ The native check also discovered all secret-read rules. `bubblewrap` was
 present, so discovery ran with the workspace sandbox on. Without it, the check
 first verifies fail-closed startup, then uses `--sandbox off` only for
 discovery. Actual sandbox enforcement and Grok specialist execution
-remain unverified.
-All four generated Codex profiles parsed as TOML. Codex 0.160.1
-`codex doctor --json` accepted the explorer profile, including
-`web_search = "live"`, in an isolated home. Actual specialist execution and
-interactive Claude discovery remain unverified. OpenCode and Copilot were not
-installed on the validation machine, so their runtime discovery is unverified.
+remain unverified. Interactive Claude discovery remains unverified.
+OpenCode and Copilot were not installed on the validation machine, so their
+runtime discovery is unverified.
 
 ## File layout
 
@@ -382,7 +362,6 @@ dotfiles/
 ├── .agents/            # Canonical rules, skills, persona, references, and roles
 ├── .claude/            # Native settings, statusline, and metadata templates
 ├── .opencode/          # Native settings and metadata templates
-├── .codex/             # Native TOML defaults
 ├── .copilot/agents/    # Native specialist metadata
 ├── .grok/              # Native defaults, statusline, and templates
 └── tests/              # Isolated installer checks

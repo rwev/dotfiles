@@ -54,7 +54,7 @@ class InstallerTests(unittest.TestCase):
         self.home = Path(self.tmp.name) / "home with ' quotes $ and `ticks`"
         self.home.mkdir()
         self.env = {k: v for k, v in os.environ.items() if k not in {
-            'CLAUDE_CONFIG_DIR', 'CODEX_HOME', 'COPILOT_HOME', 'XDG_CONFIG_HOME',
+            'CLAUDE_CONFIG_DIR', 'COPILOT_HOME', 'XDG_CONFIG_HOME',
             'GROK_HOME', 'XDG_DATA_HOME'}}
         self.env['HOME'] = str(self.home)
         self.root = ROOT
@@ -74,24 +74,21 @@ class InstallerTests(unittest.TestCase):
                 for p in self.home.rglob('*')}
 
     def test_clean_and_idempotent(self):
-        self.install('--tools=claude,codex,opencode,copilot')
+        self.install('--tools=claude,opencode,copilot')
         self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 13)
-        for path in ['.claude/CLAUDE.md', '.codex/AGENTS.md',
+        for path in ['.claude/CLAUDE.md',
                      '.config/opencode/AGENTS.md', '.copilot/copilot-instructions.md']:
             text = (self.home / path).read_text()
             self.assertIn('Global rules', text)
             self.assertNotIn('\nname:', text)
             self.assertEqual(text.count('## Address'), 0 if path.startswith(('.claude', '.config')) else 1)
-        for harness, suffix in [('.claude', '.md'), ('.codex', '.toml'),
+        for harness, suffix in [('.claude', '.md'),
                                  ('.config/opencode', '.md'), ('.copilot', '.agent.md')]:
             for role in ['implementer', 'reviewer', 'security-reviewer', 'explorer']:
                 path = self.home / harness / 'agents' / ('_my-' + role + suffix)
                 self.assertIn('## Process', path.read_text())
-                if suffix == '.toml':
-                    agent = tomllib.loads(path.read_text())
-                    self.assertTrue(agent['developer_instructions'])
         before = self.snapshot()
-        self.install('--tools=claude,codex,opencode,copilot')
+        self.install('--tools=claude,opencode,copilot')
         self.assertEqual(before, self.snapshot())
         self.assertFalse((self.home / '.zshrc').exists())
         self.assertFalse((self.home / '.grok').exists())
@@ -100,20 +97,17 @@ class InstallerTests(unittest.TestCase):
                          json.loads((ROOT / '.claude/settings.json').read_text()))
         self.assertEqual(json.loads((self.home / '.config/opencode/opencode.json').read_text()),
                          json.loads((ROOT / '.opencode/opencode.json').read_text()))
-        self.assertEqual((self.home / '.codex/config.toml').read_text(),
-                         (ROOT / '.codex/config.toml').read_text())
 
     def test_targets_and_bad_args(self):
-        for arg in ['--bogus', '--tools=', '--tools=bad', '--tools=claude,', '--tools=universal,codex']:
+        for arg in ['--bogus', '--tools=', '--tools=bad', '--tools=claude,', '--tools=universal,opencode']:
             self.install(arg, ok=False)
             self.assertEqual(self.snapshot(), {})
-        for tool in ['gemini', 'amp']:
+        for tool in ['gemini', 'amp', 'codex']:
             result = self.install('--tools=claude,' + tool, ok=False)
             self.assertEqual(result.stderr, f'Unknown tool: {tool}\n')
             self.assertEqual(self.snapshot(), {})
         self.install('--tools=universal')
         self.assertTrue((self.home / '.agents/exports/default.md').exists())
-        self.assertFalse((self.home / '.codex').exists())
         self.assertFalse((self.home / '.claude').exists())
 
     def test_dry_run(self):
@@ -121,23 +115,23 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(self.snapshot(), {})
         self.install()
         before = self.snapshot()
-        self.install('--dry-run', '--tools=codex,copilot')
+        self.install('--dry-run', '--tools=opencode,copilot')
         self.assertEqual(before, self.snapshot())
 
     def test_harness_summary(self):
         hint = 'List excluded harnesses in --tools to install them, e.g. --tools='
         for args, installed, excluded, example in [
             ((), 'Installed harnesses: claude, grok',
-             'Excluded harnesses: codex, opencode, copilot', 'claude,grok,codex'),
+             'Excluded harnesses: opencode, copilot', 'claude,grok,opencode'),
             (('--dry-run',), 'Would install harnesses: claude, grok',
-             'Excluded harnesses: codex, opencode, copilot', 'claude,grok,codex'),
-            (('--tools=grok,codex',), 'Installed harnesses: codex, grok',
-             'Excluded harnesses: claude, opencode, copilot', 'codex,grok,claude'),
-            (('--tools=claude,codex,opencode,copilot',),
-             'Installed harnesses: claude, codex, opencode, copilot',
-             'Excluded harnesses: grok', 'claude,codex,opencode,copilot,grok'),
+             'Excluded harnesses: opencode, copilot', 'claude,grok,opencode'),
+            (('--tools=grok,opencode',), 'Installed harnesses: opencode, grok',
+             'Excluded harnesses: claude, copilot', 'opencode,grok,claude'),
+            (('--tools=claude,opencode,copilot',),
+             'Installed harnesses: claude, opencode, copilot',
+             'Excluded harnesses: grok', 'claude,opencode,copilot,grok'),
             (('--tools=universal',), 'Installed harnesses: none (shared layer only)',
-             'Excluded harnesses: claude, codex, opencode, copilot, grok', 'claude'),
+             'Excluded harnesses: claude, opencode, copilot, grok', 'claude'),
         ]:
             with self.subTest(args=args):
                 output = self.install(*args).stdout
@@ -145,17 +139,17 @@ class InstallerTests(unittest.TestCase):
                 self.assertEqual(output.count(excluded + '\n'), 1)
                 self.assertEqual(output.count(hint), 1)
                 self.assertIn(hint + example + '\n', output)
-        output = self.install('--tools=claude,codex,opencode,copilot,grok').stdout
-        self.assertIn('Installed harnesses: claude, codex, opencode, copilot, grok', output)
+        output = self.install('--tools=claude,opencode,copilot,grok').stdout
+        self.assertIn('Installed harnesses: claude, opencode, copilot, grok', output)
         self.assertIn('Excluded harnesses: none', output)
         self.assertNotIn(hint, output)
 
     def test_custom_homes(self):
-        for key, folder in [('CLAUDE_CONFIG_DIR', 'claude'), ('CODEX_HOME', 'codex'),
+        for key, folder in [('CLAUDE_CONFIG_DIR', 'claude'),
                             ('COPILOT_HOME', 'copilot'), ('XDG_CONFIG_HOME', 'config')]:
             self.env[key] = str(self.home / folder)
-        self.install('--tools=claude,codex,opencode,copilot')
-        for path in ['claude/CLAUDE.md', 'codex/AGENTS.md', 'copilot/copilot-instructions.md',
+        self.install('--tools=claude,opencode,copilot')
+        for path in ['claude/CLAUDE.md', 'copilot/copilot-instructions.md',
                      'config/opencode/AGENTS.md']:
             self.assertTrue((self.home / path).is_file(), path)
         settings = json.loads((self.home / 'claude/settings.json').read_text())
@@ -204,7 +198,7 @@ class InstallerTests(unittest.TestCase):
         self.assertFalse((grok / 'notify.sh').exists())
         self.assertFalse((grok / 'hooks' / 'notifications.json').exists())
         self.assertTrue((self.home / '.claude/CLAUDE.md').is_file())
-        for path in ['.codex', '.config/opencode', '.copilot']:
+        for path in ['.config/opencode', '.copilot']:
             self.assertFalse((self.home / path).exists(), path)
         before = self.snapshot()
         self.install()
@@ -447,7 +441,7 @@ class InstallerTests(unittest.TestCase):
         line = 'command = ' + json.dumps(literal_path)
         result = subprocess.run([
             'bash', '-c',
-            'source "$1"; codex_insert_default "$2" ui "$3"',
+            'source "$1"; toml_insert_default "$2" ui "$3"',
             'test-default', str(ROOT / 'install/agent-config.sh'), str(config), line,
         ], env=self.env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -598,12 +592,11 @@ class InstallerTests(unittest.TestCase):
                     self.assertEqual(instructions.count('## Address'), 1)
 
     def test_overrides_and_migration(self):
-        codex = self.home / '.codex'
-        codex.mkdir()
-        (codex / 'AGENTS.md').write_text('old custom\n')
-        (codex / 'AGENTS.local.md').write_text('local custom\n')
-        (codex / 'AGENTS.md.bak').write_text('prior backup\n')
-        (codex / 'config.toml').write_text('model = "custom"\ndefault_permissions = "custom"\n')
+        copilot = self.home / '.copilot'
+        copilot.mkdir()
+        (copilot / 'copilot-instructions.md').write_text('old custom\n')
+        (copilot / 'copilot-instructions.local.md').write_text('local custom\n')
+        (copilot / 'copilot-instructions.md.bak').write_text('prior backup\n')
         opencode = self.home / '.config/opencode'
         opencode.mkdir(parents=True)
         (opencode / 'opencode.json').write_text(json.dumps({'instructions': [
@@ -614,21 +607,19 @@ class InstallerTests(unittest.TestCase):
         (claude / 'skills').symlink_to(ROOT / '.claude/skills')
         (claude / 'agents').symlink_to(ROOT / '.claude/agents')
         (claude / 'output-styles').symlink_to(ROOT / '.claude/output-styles')
-        self.install('--tools=claude,codex,opencode,copilot')
+        self.install('--tools=claude,opencode,copilot')
         self.assertTrue((claude / 'skills').is_dir())
         self.assertFalse((claude / 'skills').is_symlink())
-        text = (codex / 'AGENTS.md').read_text()
+        text = (copilot / 'copilot-instructions.md').read_text()
         self.assertIn('old custom', text)
         self.assertIn('local custom', text)
-        self.assertEqual((codex / 'AGENTS.md.bak').read_text(), 'prior backup\n')
-        self.assertIn('model = "custom"', (codex / 'config.toml').read_text())
-        self.assertNotIn('sandbox_mode', (codex / 'config.toml').read_text())
+        self.assertEqual((copilot / 'copilot-instructions.md.bak').read_text(), 'prior backup\n')
         settings = json.loads((claude / 'settings.json').read_text())
         self.assertEqual(settings['permissions']['deny'], ['local'])
         settings = json.loads((opencode / 'opencode.json').read_text())
         self.assertEqual(settings['instructions'], ['~/.agents/personas/my-humble-servant.md', 'extra.md'])
         before = self.snapshot()
-        self.install('--tools=claude,codex,opencode,copilot')
+        self.install('--tools=claude,opencode,copilot')
         self.assertEqual(before, self.snapshot())
 
     def test_unmanaged_links_and_invalid_json(self):
@@ -657,7 +648,7 @@ class InstallerTests(unittest.TestCase):
         fixture = Path(self.tmp.name) / 'repo'
         fixture.mkdir()
         shutil.copytree(ROOT / 'install', fixture / 'install')
-        for folder in ['.agents', '.codex', '.opencode/templates', '.claude/templates', '.copilot']:
+        for folder in ['.agents', '.opencode/templates', '.claude/templates', '.copilot']:
             shutil.copytree(ROOT / folder, fixture / folder)
         for path in ['install.sh', '.claude/settings.json', '.claude/statusline.sh', '.opencode/opencode.json']:
             target = fixture / path
@@ -677,13 +668,13 @@ class InstallerTests(unittest.TestCase):
             dest = self.home / ('.config/opencode' if harness == '.opencode' else harness) / folder
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.symlink_to(legacy)
-        self.install('--tools=claude,codex,opencode,copilot')
+        self.install('--tools=claude,opencode,copilot')
         self.assertEqual((self.home / '.claude/skills/synced/runtime.txt').read_text(), 'runtime skill')
         for path in ['.claude/agents', '.claude/output-styles', '.config/opencode/agents']:
             self.assertEqual((self.home / path / 'custom.md').read_text(), 'custom runtime')
         self.assertEqual((fixture / '.claude/skills/synced/runtime.txt').read_text(), 'runtime skill')
         before = self.snapshot()
-        self.install('--tools=claude,codex,opencode,copilot')
+        self.install('--tools=claude,opencode,copilot')
         self.assertEqual(before, self.snapshot())
 
     def test_failed_generated_render_keeps_existing_output(self):
@@ -760,63 +751,25 @@ class InstallerTests(unittest.TestCase):
         self.install('--tools=opencode')
         self.assertEqual(before, self.snapshot())
 
-    def test_unmanaged_config_and_agent_links(self):
+    def test_generated_agent_symlink_backup_rotates(self):
         outside = self.home / 'outside'
         outside.mkdir()
-        (outside / 'config.toml').write_text('model = "custom"\n')
-        (outside / 'agent.toml').write_text('name = "custom"\n')
-        directory = self.home / '.codex'
-        (directory / 'agents').mkdir(parents=True)
-        (directory / 'config.toml').symlink_to(outside / 'config.toml')
-        (directory / 'agents/_my-reviewer.toml').symlink_to(outside / 'agent.toml')
-        (directory / 'agents/_my-reviewer.toml.bak').write_text('previous')
-        self.install('--tools=codex')
-        self.assertEqual((outside / 'config.toml').read_text(), 'model = "custom"\n')
-        self.assertEqual((outside / 'agent.toml').read_text(), 'name = "custom"\n')
-        self.assertTrue((directory / 'agents/_my-reviewer.toml.bak.1').is_symlink())
-        config = tomllib.loads((directory / 'config.toml').read_text())
-        self.assertEqual(config['model'], 'custom')
-        for role in ['reviewer', 'security-reviewer', 'explorer']:
-            config = tomllib.loads((directory / f'agents/_my-{role}.toml').read_text())
-            self.assertEqual(config['sandbox_mode'], 'read-only')
-
-    def test_codex_defaults_insert_into_existing_sections(self):
-        directory = self.home / '.codex'
-        directory.mkdir()
-        config_file = directory / 'config.toml'
-        config_file.write_text('model = "custom"\ndefault_permissions = "custom"\n\n'
-                               '[features]\ncustom = true\n\n[tui]\ntheme = "custom"\n')
-        self.install('--tools=codex')
-        config = tomllib.loads(config_file.read_text())
-        self.assertEqual(config['model'], 'custom')
-        self.assertNotIn('sandbox_mode', config)
-        self.assertEqual(config['features'], {'custom': True, 'memories': False})
-        self.assertEqual(config['tui']['theme'], 'custom')
-        self.assertEqual(config['tui']['alternate_screen'], 'always')
-        before = config_file.read_text()
-        self.install('--tools=codex')
-        self.assertEqual(config_file.read_text(), before)
-
-    def test_codex_defaults_respect_commented_section_headers(self):
-        directory = self.home / '.codex'
-        directory.mkdir()
-        config_file = directory / 'config.toml'
-        config_file.write_text('model = "custom"\ndefault_permissions = "custom"\n\n'
-                               '[features] # keep this note\ncustom = true\n\n'
-                               '[tui] # another note\ntheme = "custom"\n')
-
-        self.install('--tools=codex')
-        text = config_file.read_text()
-        config = tomllib.loads(text)
-        self.assertEqual(text.count('[features]'), 1)
-        self.assertEqual(text.count('[tui]'), 1)
-        self.assertEqual(config['features'], {'custom': True, 'memories': False})
-        self.assertEqual(config['tui']['theme'], 'custom')
-        self.assertEqual(config['tui']['alternate_screen'], 'always')
-        self.assertEqual(config['default_permissions'], 'custom')
-        self.assertNotIn('sandbox_mode', config)
-        self.install('--tools=codex')
-        self.assertEqual(config_file.read_text(), text)
+        (outside / 'agent.md').write_text('name = "custom"\n')
+        directory = self.home / '.copilot'
+        agents = directory / 'agents'
+        agents.mkdir(parents=True)
+        agent = agents / '_my-reviewer.agent.md'
+        agent.symlink_to(outside / 'agent.md')
+        backup = agents / '_my-reviewer.agent.md.bak'
+        backup.write_text('previous')
+        self.install('--tools=copilot')
+        self.assertEqual((outside / 'agent.md').read_text(), 'name = "custom"\n')
+        self.assertEqual(backup.read_text(), 'previous')
+        rotated = agents / '_my-reviewer.agent.md.bak.1'
+        self.assertTrue(rotated.is_symlink())
+        self.assertEqual(os.readlink(rotated), str(outside / 'agent.md'))
+        self.assertFalse(agent.is_symlink())
+        self.assertIn('## Process', agent.read_text())
 
     def test_shared_references_link_preserves_existing_directory(self):
         references = self.home / '.agents/references'
@@ -832,7 +785,7 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(before, self.snapshot())
 
     def test_harness_agent_metadata(self):
-        self.install('--tools=claude,codex,opencode,copilot,grok')
+        self.install('--tools=claude,opencode,copilot,grok')
 
         def frontmatter(path):
             header = path.read_text().split('---', 2)[1]
@@ -846,8 +799,7 @@ class InstallerTests(unittest.TestCase):
             claude = frontmatter(self.home / '.claude/agents' / (name + '.md'))[0]
             copilot = frontmatter(self.home / '.copilot/agents' / (name + '.agent.md'))[0]
             opencode, opencode_header = frontmatter(self.home / '.config/opencode/agents' / (name + '.md'))
-            codex = tomllib.loads((self.home / '.codex/agents' / (name + '.toml')).read_text())
-            for fields in [claude, copilot, opencode, codex]:
+            for fields in [claude, copilot, opencode]:
                 self.assertEqual(fields['description'], canonical)
             claude_tools = set(claude['tools'].split(', '))
             copilot_tools = set(json.loads(copilot['tools']))
@@ -856,13 +808,11 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual({'WebFetch', 'WebSearch'} <= claude_tools, has_web)
             self.assertEqual('web' in copilot_tools, has_web)
             self.assertEqual('\n  webfetch: allow\n' in opencode_header, role == 'explorer')
-            self.assertEqual(codex.get('web_search'), 'live' if role == 'explorer' else None)
             self.assertIn('\n  task: deny\n', opencode_header)
             if role != 'implementer':
                 self.assertFalse({'Write', 'Edit'} & claude_tools)
                 self.assertNotIn('edit', copilot_tools)
                 self.assertIn('\n  edit: deny\n', opencode_header)
-                self.assertEqual(codex['sandbox_mode'], 'read-only')
         for name in ['_my-implementer', '_my-explorer']:
             grok = frontmatter(self.home / '.grok/agents' / (name + '.md'))[0]
             self.assertEqual(grok['description'],
@@ -886,13 +836,12 @@ class InstallerTests(unittest.TestCase):
         directory = self.home / '.claude'
         directory.mkdir()
         (directory / 'settings.local.json').write_text('{"statusLine":{"command":"custom-command"}}')
-        self.install('--tools=claude,codex,copilot')
+        self.install('--tools=claude,copilot')
         settings = json.loads((directory / 'settings.json').read_text())
         self.assertEqual(settings['statusLine']['command'], 'custom-command')
         self.assertFalse((directory / 'CLAUDE.local.md').exists())
-        self.assertFalse((self.home / '.codex/AGENTS.local.md').exists())
-        self.install('--tools=claude,codex,copilot')
-        self.assertFalse((self.home / '.codex/AGENTS.local.md').exists())
+        self.install('--tools=claude,copilot')
+        self.assertFalse((directory / 'CLAUDE.local.md').exists())
         for source in (ROOT / '.agents/skills').glob('my-*/SKILL.md'):
             text = source.read_text()
             self.assertIn('name: ' + source.parent.name, text)
@@ -936,7 +885,6 @@ class InstallerTests(unittest.TestCase):
                                 env=self.env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(self.snapshot(), {})
-        self.assertNotIn(str(self.home / '.codex'), result.stdout)
         self.assertNotIn(str(self.home / '.claude'), result.stdout)
         self.assertIn(str(self.home / '.agents'), result.stdout)
 
@@ -1010,7 +958,7 @@ class InstallerTests(unittest.TestCase):
 
     def test_runtime_and_unrelated_skills_untouched(self):
         files = {}
-        for path in ['.claude/.credentials.json', '.codex/auth.json', '.copilot/config.json',
+        for path in ['.claude/.credentials.json', '.copilot/config.json',
                      '.agents/skills/unrelated/SKILL.md', '.agents/other/content.txt']:
             target = self.home / path
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -1019,7 +967,7 @@ class InstallerTests(unittest.TestCase):
         own_skill = self.home / '.agents/skills/my-test'
         own_skill.mkdir()
         (own_skill / 'SKILL.md').write_text('custom same-name skill')
-        self.install('--tools=claude,codex,opencode,copilot,grok')
+        self.install('--tools=claude,opencode,copilot,grok')
         for target, content in files.items():
             self.assertEqual(target.read_bytes(), content)
         self.assertEqual((self.home / '.agents/backups/skills/my-test.bak/SKILL.md').read_text(),
@@ -1037,7 +985,7 @@ class InstallerTests(unittest.TestCase):
         opencode.mkdir(parents=True)
         (opencode / 'agents').symlink_to(ROOT / '.opencode/agents')
         before = self.snapshot()
-        self.install('--dry-run', '--tools=claude,codex,opencode,copilot')
+        self.install('--dry-run', '--tools=claude,opencode,copilot')
         self.assertEqual(before, self.snapshot())
 
     def test_conflicting_claude_skill_link_backup_not_discovered(self):
