@@ -871,6 +871,23 @@ class InstallerTests(unittest.TestCase):
             self.assertIn('tools:', text)
             self.assertIn('"execute"', text)
 
+    def test_help_flag(self):
+        flags = ['--packages', '--pretty', '--zshrc', '--git', '--agents', '--shell',
+                 '--antidote', '--agents-only', '--tools=', '--dry-run', '--help']
+        for flag in ['--help', '-h']:
+            before = self.snapshot()
+            result = subprocess.run(['bash', str(self.root / 'install.sh'), flag],
+                                    env=self.env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn('Usage:', result.stdout)
+            for option in flags:
+                self.assertIn(option, result.stdout)
+            self.assertEqual(self.snapshot(), before)
+        result = subprocess.run(['bash', str(self.root / 'install.sh'), '--bogus'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('--help', result.stderr)
+
     def test_invalid_json_document_shapes(self):
         directory = self.home / '.claude'
         directory.mkdir()
