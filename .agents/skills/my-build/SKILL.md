@@ -5,7 +5,8 @@ description: >-
   TRIGGER — invoke whenever the user wants a non-trivial task actually
   implemented end-to-end, not just planned (e.g. "build X", "implement X",
   "add feature X", "let's get this done"). SKIP for read-only planning — use
-  my-plan instead.
+  my-plan instead. SKIP when they ask for a tracked, resumable, or
+  persisted run — use my-build-tracked instead.
 compatibility: Requires native subagents and _my-implementer and _my-reviewer roles.
 ---
 
@@ -21,23 +22,19 @@ implementer's `Files:` paths explicitly. Otherwise keep all tasks
 uncommitted and review their working diffs, including untracked product
 files.
 
-Follow [durable progress](~/.agents/references/progress.md) for run
-artifacts, checkpoint ownership, baselines, knowledge validation, and native
-recovery. Read that reference before starting or resuming work. Use its
-[Scheduling](~/.agents/references/progress.md#scheduling) and
-[Build loop detail](~/.agents/references/progress.md#build-loop-detail)
-rules.
+Read [orchestration](~/.agents/references/orchestration.md) before you
+start. Follow its Build loop detail, Scheduling, and Recovery rules.
 
 ## Phase checklist
 
-1. **Plan** — Load a matching run, or accept a `my-plan` handoff, or explore.
+1. **Plan** — Use the `## Plan` block from `my-plan` in this conversation,
+   if present. Otherwise explore.
    Resolve only high-importance, high-rework decisions with the user.
 2. **Approve** — Show the task list. Get go-ahead before product edits.
    Implementation approval does not authorize commits.
-3. **Baselines** — Confirm branch and repo state. Record identity and
-   authorization. Capture each task baseline before writers start.
+3. **Check** — Confirm branch and repo state. Note pre-existing changes.
 4. **Implement batch** — Dispatch `_my-implementer` for dependency-ready
-   tasks under scheduling rules. Persist phases, claims, and IDs.
+   tasks under scheduling rules.
 5. **Join** — Join writers. Freeze review inputs. Run required shared checks.
 6. **Review** — Dispatch a fresh `_my-reviewer` for each new or changed
    diff. Resume the same reviewer only for an interrupted review or a
@@ -53,22 +50,20 @@ rules.
 Give each role a full brief; it has no other context.
 
 - `_my-implementer`: task text and requirements, global constraints, and
-  approval status (it never commits). Add the absolute run dir, its
-  checkpoint and progress-reference paths, relevant knowledge cards, owned
-  paths and resource limits, and a notice that it is not alone.
+  approval status (it never commits), relevant findings, owned paths and
+  resource limits, and a notice that it is not alone.
 - `_my-reviewer`: the same context, plus a `base..head` range if committed.
-  Otherwise supply the task baseline and the staged, unstaged, and untracked
-  changes scoped to its owned paths. Start it fresh, with no conversation
+  Otherwise supply the pre-existing changes to ignore, and the staged,
+  unstaged, and untracked changes scoped to its owned paths. Start it fresh, with no conversation
   history forked or inherited from you.
 
 ## Rules
 
-- Keep resumed run task IDs and status. Right-size tasks; one small deliverable
+- Right-size tasks; one small deliverable
   may stay one task.
 - Hold global constraints yourself and paste them into every dispatch.
-- Persist run artifacts when the harness permits writes.
 - Do not pause between tasks to ask "should I continue?" Keep going until
   every task is done or something is blocked.
 - Follow the Build loop detail for `NEEDS_CONTEXT` (read its `Question:`),
   `BLOCKED`, `DONE_WITH_CONCERNS`, and reviewer `Verdict: Needs context`.
-- Record each implementer's `Files:` in state.
+- Keep each implementer's `Files:` for commits and review scope.

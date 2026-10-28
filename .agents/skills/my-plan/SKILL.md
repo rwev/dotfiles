@@ -8,7 +8,8 @@ description: >-
   planned before code is written (e.g. "how would we approach X", "plan this
   out", "what would it take to do X", "scope this change", "plan this out in
   depth", "what do we need to decide before starting X"). SKIP when they want
-  it built — use my-build instead.
+  it built — use my-build instead. SKIP when they ask for a tracked,
+  resumable, or persisted plan — use my-plan-tracked instead.
 compatibility: Requires native subagents and the _my-explorer role.
 ---
 
@@ -19,26 +20,18 @@ If either is unavailable, report
 `Unsupported: my-plan requires native subagents and its explorer role` and
 stop. Do not substitute inline exploration for the required subagent.
 
-Do not edit product files or write code. When the harness permits writes,
-write only run artifacts under `.agents/work/`. Follow
-[durable progress](~/.agents/references/progress.md) for run selection,
-checkpoints, and fingerprint-validated knowledge. Load a linked or
-unambiguous matching run before new exploration. Reuse its decisions and
-validate relevant cards before trusting them.
-
-If writes are prohibited, return an artifact-ready plan and distilled
-exploration handoff for `my-build` to persist at startup.
+Do not edit files or write code. Follow
+[orchestration](~/.agents/references/orchestration.md).
 
 1. Dispatch one `_my-explorer` per distinct, useful question, each with a
    narrow scope. Follow
-   [Scheduling](~/.agents/references/progress.md#scheduling) for distinct
-   questions and stable evidence; do not repeat an investigation. Resume the
-   recorded explorer for each scope. Follow recovery rules before replacement.
+   [Scheduling](~/.agents/references/orchestration.md#scheduling) for distinct
+   questions and stable evidence; do not repeat an investigation. After an
+   interruption, resume the same explorer under
+   [Recovery](~/.agents/references/orchestration.md#recovery).
    Give each explorer the full task context and its scope. Have it report
    how the code works today: real `file:line` locations and patterns to reuse.
    Keep raw search noise out of your context; work from its distilled report.
-   Record each scope and native ID immediately when writes are allowed.
-   Persist important discoveries and source fingerprints before final handoff.
 2. Enumerate every open decision the task leaves unresolved — including ones
    never raised. Hunt across each category:
    - **Technical** — approach, libraries, patterns, data model/API shape.
@@ -60,11 +53,10 @@ exploration handoff for `my-build` to persist at startup.
    high-bar decision, ask that too.
 6. Separately, call out risks that need no decision but should be known
    before work starts (perf cliffs, migration pain, security exposure).
-7. Once every decision is resolved, write the finalized scope: files that
-   would change, decisions made (asked and autonomous) with reasons, and an
-   ordered step list for `my-build`. When writes are allowed, save
-   `plan.md`, `state.md`, and relevant knowledge cards. Include the absolute
-   run path. Otherwise include the same content for startup persistence.
+7. Once every decision is resolved, write a `## Plan` block in the
+   conversation for `my-build`: files that would change, decisions made
+   (asked and autonomous) with reasons, ordered tasks with owned paths, and
+   key `file:line` findings.
 
 Keep it concrete. If the task is trivial once explored, say so and skip
 ceremony rather than manufacturing decisions.

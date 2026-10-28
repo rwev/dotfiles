@@ -35,7 +35,7 @@ supports. Prompt instructions are not a sandbox.
    go-ahead before touching anything.
 
 For a large audit, use parallel reviewers for distinct target clusters when
-useful. Follow [Scheduling](~/.agents/references/progress.md#scheduling);
+useful. Follow [Scheduling](~/.agents/references/orchestration.md#scheduling);
 avoid overlapping audits and keep evidence stable. As coordinator, merge
 findings and check cross-boundary auth and dataflow coverage. Standalone
 audits need no build run artifacts.
