@@ -1006,6 +1006,158 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual({p.name for p in root.iterdir()},
                              {p.name for p in (ROOT / '.agents/skills').iterdir()})
 
+    def test_zshrc_module_only(self):
+        result = subprocess.run(['bash', str(self.root / 'install.sh'), '--zshrc'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual({p.name for p in self.home.iterdir()},
+                         {'.zshrc', '.zshrc.core', '.zsh_plugins.txt'})
+        self.assertTrue((self.home / '.zshrc').is_file())
+        self.assertFalse((self.home / '.zshrc').is_symlink())
+        self.assertIn('source "$HOME/.zshrc.core"', (self.home / '.zshrc').read_text())
+        self.assertEqual((self.home / '.zshrc.core').resolve(), self.root / '.zshrc')
+        self.assertEqual((self.home / '.zsh_plugins.txt').resolve(), self.root / '.zsh_plugins.txt')
+        self.assertIn('Installed modules: zshrc\n', result.stdout)
+        for line in (
+            'Start a new zsh session to load everything.',
+            'On first launch, antidote will clone all plugins (takes ~10s).',
+            'Tip: ~/.zshrc is untracked — machine-specific lines (installer PATH appends, etc.) belong there.',
+        ):
+            self.assertIn(line, result.stdout)
+        self.assertIn('Done.', result.stdout)
+        self.assertNotIn('Done! Agent configuration installed.', result.stdout)
+
+    def test_git_module_only(self):
+        result = subprocess.run(['bash', str(self.root / 'install.sh'), '--git'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual({p.name for p in self.home.iterdir()}, {'.gitconfig'})
+        self.assertEqual((self.home / '.gitconfig').resolve(), self.root / '.gitconfig')
+        self.assertFalse((self.home / '.zshrc').exists())
+        self.assertFalse((self.home / '.agents').exists())
+        self.assertIn('Installed modules: git\n', result.stdout)
+        self.assertIn('Done.', result.stdout)
+        for line in (
+            'Start a new zsh session to load everything.',
+            'On first launch, antidote will clone all plugins (takes ~10s).',
+            'Tip: ~/.zshrc is untracked — machine-specific lines (installer PATH appends, etc.) belong there.',
+        ):
+            self.assertNotIn(line, result.stdout)
+
+    def test_zshrc_and_git_modules_use_run_order(self):
+        for args in (('--zshrc', '--git'), ('--git', '--zshrc')):
+            with self.subTest(args=args):
+                shutil.rmtree(self.home)
+                self.home.mkdir()
+                result = subprocess.run(['bash', str(self.root / 'install.sh'), *args],
+                                        env=self.env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual({p.name for p in self.home.iterdir()},
+                                 {'.zshrc', '.zshrc.core', '.zsh_plugins.txt', '.gitconfig'})
+                self.assertIn('source "$HOME/.zshrc.core"', (self.home / '.zshrc').read_text())
+                self.assertEqual((self.home / '.zshrc.core').resolve(), self.root / '.zshrc')
+                self.assertEqual((self.home / '.zsh_plugins.txt').resolve(),
+                                 self.root / '.zsh_plugins.txt')
+                self.assertEqual((self.home / '.gitconfig').resolve(), self.root / '.gitconfig')
+                self.assertFalse((self.home / '.agents').exists())
+                self.assertIn('Installed modules: zshrc, git\n', result.stdout)
+
+    def test_agents_module_only(self):
+        result = subprocess.run(['bash', str(self.root / 'install.sh'), '--agents'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue((self.home / '.agents').is_dir())
+        self.assertFalse((self.home / '.zshrc').exists())
+        self.assertIn('Installed modules: agents\n', result.stdout)
+        self.assertIn('Done! Agent configuration installed.', result.stdout)
+
+    def test_agents_only_rejects_other_modules(self):
+        result = subprocess.run(['bash', str(self.root / 'install.sh'), '--agents-only', '--zshrc'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stderr, '--agents-only cannot be combined with other module flags\n')
+        self.assertEqual(self.snapshot(), {})
+
+    def test_tools_requires_agents_module(self):
+        result = subprocess.run(['bash', str(self.root / 'install.sh'), '--zshrc', '--tools=grok'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stderr, '--tools requires the agents module\n')
+        self.assertEqual(self.snapshot(), {})
+
+    def test_git_dry_run_previews_only_git(self):
+        result = subprocess.run(['bash', str(self.root / 'install.sh'), '--dry-run', '--git'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.snapshot(), {})
+        self.assertIn('Would install modules: git\n', result.stdout)
+        self.assertIn('Dry run complete.', result.stdout)
+        self.assertNotIn('Changing default shell to zsh', result.stdout)
+        self.assertNotIn('Done', result.stdout)
+
+    def test_shell_dry_run_without_zsh(self):
+        commands = Path(self.tmp.name) / 'commands'
+        commands.mkdir()
+        for name in ['apt-get', 'basename', 'dirname', 'jq']:
+            (commands / name).symlink_to('/usr/bin/true' if name == 'apt-get' else shutil.which(name))
+        self.env['PATH'] = str(commands)
+        self.env['SHELL'] = '/bin/bash'
+        result = subprocess.run(['/bin/bash', str(self.root / 'install.sh'), '--dry-run', '--shell'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.snapshot(), {})
+        self.assertIn('Changing default shell to zsh', result.stdout)
+        self.assertIn('Would install modules: shell\n', result.stdout)
+
+    def test_duplicate_git_flag_links_once(self):
+        result = subprocess.run(['bash', str(self.root / 'install.sh'), '--git', '--git'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(set(self.snapshot()), {'.gitconfig'})
+        self.assertEqual(self.snapshot()['.gitconfig'][0], 'link')
+        self.assertEqual((self.home / '.gitconfig').resolve(), self.root / '.gitconfig')
+        self.assertFalse((self.home / '.gitconfig.bak').exists())
+        self.assertIn('Installed modules: git\n', result.stdout)
+
+    def test_full_dry_run_lists_all_modules(self):
+        result = subprocess.run(['bash', str(self.root / 'install.sh'), '--dry-run'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.snapshot(), {})
+        self.assertIn(
+            'Would install modules: packages, pretty, zshrc, git, agents, shell, antidote\n',
+            result.stdout)
+
+    def test_agents_only_lists_agents_module(self):
+        result = subprocess.run(['bash', str(self.root / 'install.sh'), '--agents-only'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('Installed modules: agents\n', result.stdout)
+        self.assertNotIn('Start a new zsh session to load everything.', result.stdout)
+        self.assertNotIn('On first launch, antidote will clone all plugins (takes ~10s).', result.stdout)
+        self.assertNotIn('Tip: ~/.zshrc is untracked', result.stdout)
+
+    def test_antidote_dry_run(self):
+        result = subprocess.run(['bash', str(self.root / 'install.sh'), '--dry-run', '--antidote'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.snapshot(), {})
+        self.assertIn('Installing antidote plugin manager', result.stdout)
+        self.assertIn('Would install modules: antidote\n', result.stdout)
+
+    def test_packages_dry_run_lists_missing_packages(self):
+        commands = Path(self.tmp.name) / 'commands'
+        commands.mkdir()
+        for name in ['apt-get', 'basename', 'dirname']:
+            (commands / name).symlink_to('/usr/bin/true' if name == 'apt-get' else shutil.which(name))
+        self.env['PATH'] = str(commands)
+        result = subprocess.run(['/bin/bash', str(self.root / 'install.sh'), '--dry-run', '--packages'],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.snapshot(), {})
+        self.assertIn('Would install modules: packages\n', result.stdout)
+        self.assertIn('Installing: zsh fzf git jq', result.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,9 @@
-symlink_dotfiles() {
+link_zshrc_files() {
   link_file "$DOTFILES_DIR/.zshrc"           "$HOME/.zshrc.core"
   link_file "$DOTFILES_DIR/.zsh_plugins.txt" "$HOME/.zsh_plugins.txt"
+}
+
+link_gitconfig() {
   link_file "$DOTFILES_DIR/.gitconfig"       "$HOME/.gitconfig"
 }
 

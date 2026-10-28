@@ -17,6 +17,8 @@ Minimal, fast zsh configuration.
 
 ## Install
 
+A run with no module flags installs every module.
+
 ```bash
 git clone https://github.com/you/dotfiles.git ~/dotfiles
 bash ~/dotfiles/install.sh
@@ -26,9 +28,72 @@ Re-login (or `exec zsh`) to start using zsh.
 
 ### Dry run first
 
+`--dry-run` changes nothing. It previews only the selected modules.
+
 ```bash
 bash ~/dotfiles/install.sh --dry-run
 ```
+
+A dry run prints `Would install modules:` and the selected names.
+A real run prints `Installed modules:` and the selected names.
+With no module flags, those names are `packages, pretty, zshrc, git, agents, shell, antidote`.
+
+### Choose modules
+
+Pass one or more module flags to install only those modules.
+The installer uses the order below, not the flag order.
+A module does not install another module.
+
+| Flag         | What it does                                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `--packages` | Install missing zsh, fzf, git, and jq.                                                                              |
+| `--pretty`   | Install bat and glow when a supported package manager can.                                                          |
+| `--zshrc`    | Link the tracked zshrc to `~/.zshrc.core`. Link `~/.zsh_plugins.txt`. Make `~/.zshrc` source `"$HOME/.zshrc.core"`. |
+| `--git`      | Link `~/.gitconfig`.                                                                                                |
+| `--agents`   | Install the shared layer and the selected harnesses.                                                                |
+| `--shell`    | Add zsh to `/etc/shells` when needed. Change the login shell.                                                       |
+| `--antidote` | Clone antidote when it is missing.                                                                                  |
+
+- `--zshrc` does not install packages, change the login shell, or clone antidote.
+- `--git` does not install the git binary.
+- `--agents` does not install jq.
+- jq must be on `PATH` for the agents module.
+
+Duplicate flags are accepted. An unknown argument fails.
+The installer prints `Unknown argument:`.
+
+`--agents-only` is an alias for only the agents module.
+It still works with `--dry-run` and `--tools`.
+Combining it with a different module flag is an error.
+The installer prints `--agents-only cannot be combined with other module flags`.
+`--agents` selects the same module, so `--agents-only --agents` is accepted.
+Use `--agents` to combine agents with other modules.
+
+`--tools` selects harnesses.
+It defaults to `claude,grok` when the agents module runs.
+`--tools` replaces that default.
+An unknown tool fails. The installer prints `Unknown tool:`.
+Use `universal` alone. Otherwise the installer prints `universal must be used alone`.
+Passing a valid `--tools` list when agents is not selected is an error.
+The installer prints `--tools requires the agents module`.
+The other harness examples in this file stay valid.
+
+```bash
+# One module.
+bash ~/dotfiles/install.sh --zshrc
+bash ~/dotfiles/install.sh --git
+
+# Two modules. The installer still runs zshrc before git.
+bash ~/dotfiles/install.sh --git --zshrc
+
+# Agents only.
+bash ~/dotfiles/install.sh --agents-only
+
+# Agents with an explicit harness list.
+bash ~/dotfiles/install.sh --agents --tools=claude,opencode,copilot,grok
+```
+
+More `--agents-only` examples are under "Install or update agents only".
 
 ## Key bindings
 
@@ -350,7 +415,7 @@ runtime discovery is unverified.
 
 ```text
 dotfiles/
-├── install.sh          # Installer options and task order
+├── install.sh          # Module flags and install order
 ├── install/
 │   ├── common.sh       # Shared file helpers
 │   ├── agent-config.sh # JSON merges and native TOML defaults
