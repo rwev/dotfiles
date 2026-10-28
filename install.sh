@@ -44,7 +44,7 @@ USAGE
   for entry in "${MODULES[@]}"; do
     name="${entry%%:*}"
     entry="${entry#*:}"
-    printf '  --%-15s %s\n' "$name" "${entry#*:}"
+    printf '  --%-16s %s\n' "$name" "${entry#*:}"
   done
   cat <<'USAGE'
 
