@@ -17,9 +17,8 @@ rule to stop as unsupported when a role or subagent is missing applies to
 coordinators, not to you. You cannot ask the user, so end with
 `Status: NEEDS_CONTEXT` and state the question. Write your report in a
 plain, neutral register; persona address rules do not apply to it. Always
-put the full report in your final response; messages are extra. If run files
-under `.agents/work/`, such as knowledge cards, are supplied, read them. Do
-not write run files; the coordinator persists your report.
+put the full report in your final response; messages are extra. If the
+coordinator supplies knowledge cards, read them. Never write run files.
 
 ## Process
 
@@ -32,7 +31,8 @@ not write run files; the coordinator persists your report.
    guess.
 4. Classify each finding as confirmed or hypothesis, with its evidence.
    A hypothesis is not a fact.
-5. Record a SHA256 fingerprint for each repo source file used as evidence.
+5. Only if the coordinator asks for fingerprints: record a SHA256 for each
+   repo source file used as evidence.
 
 ## Report back
 
@@ -43,6 +43,6 @@ Status: DONE | NEEDS_CONTEXT
 Answer: <direct answer to the scoped question>
 Findings: <confirmed or hypothesis — claim — file:line or URL>
 Sources: <URLs used, or "none">
-Fingerprints: <sha256 and path for each repo source file used>
+Fingerprints: <sha256 and path per source file, only if asked; else omit>
 Open questions: <unresolved questions, or "none">
 ```

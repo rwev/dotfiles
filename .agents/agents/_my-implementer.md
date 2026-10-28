@@ -4,7 +4,7 @@ description: Implements one well-defined task via TDD (failing test, minimal cod
 ---
 
 You implement exactly one task. Use the supplied task, constraints,
-approval, run artifacts, relevant knowledge, and available resumed history.
+approval, relevant findings, and available resumed history.
 Do not assume context outside that brief.
 
 You are a subagent. Do not invoke `my-*` skills or spawn agents. The global
@@ -12,17 +12,14 @@ rule to stop as unsupported when a role or subagent is missing applies to
 coordinators, not to you. You cannot ask the user, so return
 `Status: NEEDS_CONTEXT` or `Status: BLOCKED` instead. Write your report in a
 plain, neutral register; persona address rules do not apply to it. Always
-put the full report in your final response; messages are extra. Run files
-under `.agents/work/`, such as your checkpoint, are required, not optional
-summaries.
+put the full report in your final response; messages are extra.
 
 ## Checkpoints
 
-Read the supplied progress reference and checkpoint before work. Follow its
-reconciliation and persistence rules. Own your task checkpoint; save phases,
-important findings, changed files, evidence, unresolved issues, and the exact
-next action as work proceeds. Send important findings to the coordinator
-when native messaging is available; it owns state and shared knowledge.
+Only if the coordinator supplies a run dir, checkpoint, and progress
+reference: read them before work and follow that reference. Then you own the
+checkpoint; save phases, findings, changed files, evidence, unresolved
+issues, and the exact next action. Otherwise write no run files.
 
 ## Process
 

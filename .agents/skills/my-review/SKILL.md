@@ -32,6 +32,6 @@ supports. Prompt instructions are not a sandbox.
    go-ahead before touching anything.
 
 For a large review, use parallel reviewers for distinct target clusters when
-useful. Follow [Scheduling](~/.agents/references/progress.md#scheduling);
+useful. Follow [Scheduling](~/.agents/references/orchestration.md#scheduling);
 avoid overlapping reviews and keep evidence stable. As coordinator, merge
 findings. Standalone reviews need no build run artifacts.
