@@ -17,12 +17,17 @@ Minimal, fast zsh configuration.
 
 ## Install
 
-A run with no module flags installs every module.
+A run with no module flags is a dry run of every module. It changes nothing.
+Use `--everything` to install every module.
 
 ```bash
 git clone https://github.com/you/dotfiles.git ~/dotfiles
-bash ~/dotfiles/install.sh
+bash ~/dotfiles/install.sh               # preview
+bash ~/dotfiles/install.sh --everything  # install
 ```
+
+`--everything` cannot be combined with module flags or `--agents-only`.
+`--everything --dry-run` previews every module.
 
 Re-login (or `exec zsh`) to start using zsh.
 
@@ -39,7 +44,7 @@ bash ~/dotfiles/install.sh --dry-run
 
 A dry run prints `Would install modules:` and the selected names.
 A real run prints `Installed modules:` and the selected names.
-With no module flags, those names are `packages, pretty, zshrc, git, agents, shell, antidote`.
+With no module flags or with `--everything`, those names are `packages, pretty, zshrc, git, agents, shell, antidote`.
 
 ### Choose modules
 
