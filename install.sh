@@ -18,6 +18,8 @@ RUN_AGENTS=false
 RUN_SHELL=false
 RUN_ANTIDOTE=false
 MODULE_SELECTED=false
+EVERYTHING=false
+DEFAULT_PREVIEW=false
 
 # Module flags, in run order: flag:variable:help. The parser and --help both
 # read this list.
@@ -34,10 +36,11 @@ MODULES=(
 usage() {
   local entry name
   cat <<'USAGE'
-Usage: bash install.sh [options] [module flags]
+Usage: bash install.sh [options] [--everything | module flags]
 
-With no module flags, all modules run. With module flags, only those run,
-always in the order below.
+With no module flags, the installer previews all modules and changes
+nothing. Use --everything to install all modules. With module flags, only
+those run. Modules always run in the order below.
 
 Module flags:
 USAGE
@@ -49,6 +52,8 @@ USAGE
   cat <<'USAGE'
 
 Options:
+  --everything       Install all modules. Do not combine with module flags or
+                     --agents-only.
   --agents-only      Run only the agents module. Use with no other module flag.
   --tools=LIST       Agent harnesses, comma-separated: claude, opencode,
                      copilot, grok. Default: claude,grok. Use "universal"
@@ -69,7 +74,8 @@ Environment:
   SHELL              The shell module skips chsh if this is already zsh.
 
 Examples:
-  bash install.sh --dry-run
+  bash install.sh                  # preview all modules; change nothing
+  bash install.sh --everything     # install all modules
   bash install.sh --git --zshrc
   bash install.sh --agents-only
   bash install.sh --agents --tools=claude,opencode,copilot,grok
@@ -98,6 +104,7 @@ done
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=true ;;
+    --everything) EVERYTHING=true ;;
     --agents-only) AGENTS_ONLY=true; RUN_AGENTS=true; MODULE_SELECTED=true ;;
     --tools=*) TOOLS="${arg#--tools=}"; TOOLS_GIVEN=true ;;
     --*) select_module "${arg#--}" || {
@@ -106,7 +113,16 @@ for arg in "$@"; do
   esac
 done
 
+if $EVERYTHING && $MODULE_SELECTED; then
+  printf '%s\n' '--everything cannot be combined with module flags or --agents-only' >&2
+  exit 1
+fi
+
 if ! $MODULE_SELECTED; then
+  if ! $EVERYTHING && ! $DRY_RUN; then
+    DRY_RUN=true
+    DEFAULT_PREVIEW=true
+  fi
   RUN_PACKAGES=true
   RUN_PRETTY=true
   RUN_ZSHRC=true
@@ -201,6 +217,9 @@ main() {
   if $DRY_RUN; then
     info "Would install modules: $modules"
     success "Dry run complete."
+    if $DEFAULT_PREVIEW; then
+      info "Nothing changed. Re-run with --everything, or with module flags, to install."
+    fi
     return
   fi
   success "Installed modules: $modules"

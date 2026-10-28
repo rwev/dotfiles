@@ -872,7 +872,7 @@ class InstallerTests(unittest.TestCase):
             self.assertIn('"execute"', text)
 
     def test_help_flag(self):
-        flags = ['--packages', '--pretty', '--zshrc', '--git', '--agents', '--shell',
+        flags = ['--everything', '--packages', '--pretty', '--zshrc', '--git', '--agents', '--shell',
                  '--antidote', '--agents-only', '--tools=', '--dry-run', '--help']
         for flag in ['--help', '-h']:
             before = self.snapshot()
@@ -1156,6 +1156,48 @@ class InstallerTests(unittest.TestCase):
         self.assertIn(
             'Would install modules: packages, pretty, zshrc, git, agents, shell, antidote\n',
             result.stdout)
+
+    def run_installer(self, *args):
+        return subprocess.run(['bash', str(self.root / 'install.sh'), *args],
+                              env=self.env, capture_output=True, text=True)
+
+    def test_bare_run_previews_all_modules(self):
+        for args in ((), ('--tools=claude',)):
+            with self.subTest(args=args):
+                result = self.run_installer(*args)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(self.snapshot(), {})
+                self.assertIn(
+                    'Would install modules: packages, pretty, zshrc, git, agents, shell, antidote\n',
+                    result.stdout)
+                self.assertIn('Nothing changed. Re-run with --everything', result.stdout)
+
+    def test_everything_selects_all_modules_for_real(self):
+        result = subprocess.run(['bash', '-c',
+                                 'source "$1" --everything; echo "$DRY_RUN $RUN_PACKAGES $RUN_PRETTY '
+                                 '$RUN_ZSHRC $RUN_GIT $RUN_AGENTS $RUN_SHELL $RUN_ANTIDOTE"',
+                                 'bash', str(self.root / 'install.sh')],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.split(), ['false'] + ['true'] * 7)
+
+    def test_everything_dry_run_changes_nothing(self):
+        result = self.run_installer('--everything', '--dry-run', '--tools=grok')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.snapshot(), {})
+        self.assertIn(
+            'Would install modules: packages, pretty, zshrc, git, agents, shell, antidote\n',
+            result.stdout)
+        self.assertNotIn('Nothing changed. Re-run', result.stdout)
+
+    def test_everything_conflicts(self):
+        for args in (('--everything', '--git'), ('--zshrc', '--everything'),
+                     ('--everything', '--agents-only')):
+            with self.subTest(args=args):
+                result = self.run_installer(*args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('--everything cannot be combined', result.stderr)
+                self.assertEqual(self.snapshot(), {})
 
     def test_agents_only_lists_agents_module(self):
         result = subprocess.run(['bash', str(self.root / 'install.sh'), '--agents-only'],
