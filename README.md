@@ -26,6 +26,9 @@ bash ~/dotfiles/install.sh
 
 Re-login (or `exec zsh`) to start using zsh.
 
+Run `bash ~/dotfiles/install.sh --help` (or `-h`) to list every module flag,
+option, and environment variable. It changes nothing.
+
 ### Dry run first
 
 `--dry-run` changes nothing. It previews only the selected modules.

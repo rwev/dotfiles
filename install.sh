@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Dotfiles installer
-# Usage: bash install.sh [--dry-run] [--packages] [--pretty] [--zshrc] [--git] [--agents] [--shell] [--antidote] [--agents-only] [--tools=claude,opencode,copilot,grok]
+# Usage: bash install.sh --help
 set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,19 +19,90 @@ RUN_SHELL=false
 RUN_ANTIDOTE=false
 MODULE_SELECTED=false
 
+# Module flags, in run order: flag:variable:help. The parser and --help both
+# read this list.
+MODULES=(
+  "packages:RUN_PACKAGES:Install zsh, fzf, git, jq, and other missing packages"
+  "pretty:RUN_PRETTY:Install pretty-print tools"
+  "zshrc:RUN_ZSHRC:Link zsh config files and add the ~/.zshrc loader"
+  "git:RUN_GIT:Link the git config"
+  "agents:RUN_AGENTS:Install agent rules, skills, and roles for --tools harnesses"
+  "shell:RUN_SHELL:Set zsh as the default login shell"
+  "antidote:RUN_ANTIDOTE:Clone the antidote zsh plugin manager"
+)
+
+usage() {
+  local entry name
+  cat <<'USAGE'
+Usage: bash install.sh [options] [module flags]
+
+With no module flags, all modules run. With module flags, only those run,
+always in the order below.
+
+Module flags:
+USAGE
+  for entry in "${MODULES[@]}"; do
+    name="${entry%%:*}"
+    entry="${entry#*:}"
+    printf '  --%-15s %s\n' "$name" "${entry#*:}"
+  done
+  cat <<'USAGE'
+
+Options:
+  --agents-only      Run only the agents module. Use with no other module flag.
+  --tools=LIST       Agent harnesses, comma-separated: claude, opencode,
+                     copilot, grok. Default: claude,grok. Use "universal"
+                     alone for the shared ~/.agents layer only. Needs the
+                     agents module.
+  --dry-run          Print what would change. Change nothing.
+  -h, --help         Show this help and exit.
+
+Environment:
+  HOME               Install target for links and config.
+  CLAUDE_CONFIG_DIR  Claude config dir (default: $HOME/.claude).
+  COPILOT_HOME       Copilot config dir (default: $HOME/.copilot).
+  XDG_CONFIG_HOME    OpenCode config is $XDG_CONFIG_HOME/opencode
+                     (default: $HOME/.config/opencode).
+  GROK_HOME          Grok config dir (default: $HOME/.grok).
+  XDG_DATA_HOME      antidote dir is $XDG_DATA_HOME/antidote
+                     (default: $HOME/.local/share/antidote).
+  SHELL              The shell module skips chsh if this is already zsh.
+
+Examples:
+  bash install.sh --dry-run
+  bash install.sh --git --zshrc
+  bash install.sh --agents-only
+  bash install.sh --agents --tools=claude,opencode,copilot,grok
+USAGE
+}
+
+select_module() {
+  local entry var
+  for entry in "${MODULES[@]}"; do
+    if [[ "$1" == "${entry%%:*}" ]]; then
+      var="${entry#*:}"
+      printf -v "${var%%:*}" true
+      MODULE_SELECTED=true
+      return 0
+    fi
+  done
+  return 1
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) usage; exit 0 ;;
+  esac
+done
+
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=true ;;
     --agents-only) AGENTS_ONLY=true; RUN_AGENTS=true; MODULE_SELECTED=true ;;
     --tools=*) TOOLS="${arg#--tools=}"; TOOLS_GIVEN=true ;;
-    --packages) RUN_PACKAGES=true; MODULE_SELECTED=true ;;
-    --pretty) RUN_PRETTY=true; MODULE_SELECTED=true ;;
-    --zshrc) RUN_ZSHRC=true; MODULE_SELECTED=true ;;
-    --git) RUN_GIT=true; MODULE_SELECTED=true ;;
-    --agents) RUN_AGENTS=true; MODULE_SELECTED=true ;;
-    --shell) RUN_SHELL=true; MODULE_SELECTED=true ;;
-    --antidote) RUN_ANTIDOTE=true; MODULE_SELECTED=true ;;
-    *) printf 'Unknown argument: %s\n' "$arg" >&2; exit 1 ;;
+    --*) select_module "${arg#--}" || {
+      printf 'Unknown argument: %s\nRun bash install.sh --help for options.\n' "$arg" >&2; exit 1; } ;;
+    *) printf 'Unknown argument: %s\nRun bash install.sh --help for options.\n' "$arg" >&2; exit 1 ;;
   esac
 done
 
