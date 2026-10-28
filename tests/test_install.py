@@ -1,4 +1,5 @@
 """Run the installer only in isolated homes. Python is a test dependency only."""
+import re
 import os
 from pathlib import Path
 import subprocess
@@ -75,7 +76,7 @@ class InstallerTests(unittest.TestCase):
 
     def test_clean_and_idempotent(self):
         self.install('--tools=claude,opencode,copilot')
-        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 13)
+        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 15)
         for path in ['.claude/CLAUDE.md',
                      '.config/opencode/AGENTS.md', '.copilot/copilot-instructions.md']:
             text = (self.home / path).read_text()
@@ -190,7 +191,7 @@ class InstallerTests(unittest.TestCase):
                 self.assertIn('request the missing context', body)
             shared_body = (ROOT / '.agents/agents' / (name + '.md')).read_text().split('---', 2)[2]
             self.assertTrue(body.endswith(shared_body.lstrip('\n')))
-        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 13)
+        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 15)
         self.assertFalse((grok / 'skills').exists())
         self.assertTrue((grok / 'statusline.sh').is_symlink())
         self.assertEqual((grok / 'statusline.sh').resolve(), ROOT / '.grok' / 'statusline.sh')
@@ -849,6 +850,15 @@ class InstallerTests(unittest.TestCase):
         for skill in ['my-build', 'my-plan', 'my-security']:
             text = (self.home / f'.agents/skills/{skill}/SKILL.md').read_text()
             self.assertIn('Unsupported:', text)
+        for skill in ['my-build-tracked', 'my-plan-tracked']:
+            text = (self.home / f'.agents/skills/{skill}/SKILL.md').read_text()
+            self.assertIn(f'~/.agents/skills/{skill.removesuffix("-tracked")}/SKILL.md', text)
+            self.assertIn('~/.agents/references/progress.md', text)
+        for name in ['orchestration.md', 'progress.md']:
+            self.assertTrue((self.home / f'.agents/references/{name}').is_file())
+        for path in (ROOT / '.agents').rglob('*.md'):
+            for ref in re.findall(r'~/\.agents/(references/[\w.-]+\.md|skills/[\w-]+/SKILL\.md)', path.read_text()):
+                self.assertTrue((ROOT / '.agents' / ref).is_file(), f'{path}: {ref}')
         for tool in ['.claude', '.opencode']:
             for directory in ['agents', 'output-styles']:
                 self.assertEqual(list((ROOT / tool / directory).glob('_my-*.md')), [])
@@ -973,7 +983,7 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual((self.home / '.agents/backups/skills/my-test.bak/SKILL.md').read_text(),
                          'custom same-name skill')
         self.assertTrue(own_skill.is_symlink())
-        self.assertEqual(len(list((self.home / '.agents/skills').glob('my-*'))), 13)
+        self.assertEqual(len(list((self.home / '.agents/skills').glob('my-*'))), 15)
         self.assertFalse(any(p.name.endswith('.bak') for p in (self.home / '.agents/skills').iterdir()))
 
     def test_dry_run_legacy_directory_migration(self):
@@ -1002,7 +1012,7 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual((backup / 'SKILL.md').read_text(), 'custom same-name skill')
         self.assertEqual((outside / 'SKILL.md').read_text(), 'custom same-name skill')
         for root in [directory, self.home / '.agents/skills']:
-            self.assertEqual(len(list(root.iterdir())), 13)
+            self.assertEqual(len(list(root.iterdir())), 15)
             self.assertEqual({p.name for p in root.iterdir()},
                              {p.name for p in (ROOT / '.agents/skills').iterdir()})
 
