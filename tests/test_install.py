@@ -453,10 +453,12 @@ class InstallerTests(unittest.TestCase):
     def test_grok_shell_aliases(self):
         aliases = '\n'.join(line for line in (ROOT / '.zshrc').read_text().splitlines()
                             if line.startswith('alias gr'))
-        result = subprocess.run(['zsh', '-f', '-c', aliases + '\nalias grk grkc grkr'],
+        shell = ['zsh', '-f'] if shutil.which('zsh') else ['bash', '--norc', '--noprofile']
+        result = subprocess.run([*shell, '-c', aliases + '\nalias grk grkc grkr'],
                                 env=self.env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.splitlines(), [
+        lines = [line.removeprefix('alias ') for line in result.stdout.splitlines()]
+        self.assertEqual(lines, [
             "grk='grok --always-approve'",
             "grkc='grok --continue --always-approve'",
             "grkr='grok --resume --always-approve'",
