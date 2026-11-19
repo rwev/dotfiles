@@ -8,7 +8,8 @@ override these defaults.
 
 - `_my-*` files are specialist agent roles. Dispatch them as native subagents.
 - `my-*` directories are skills. Invoke them as workflows.
-- `my-build`, `my-security`, `my-plan`, and `my-review` need native subagents.
+- `my-build`, `my-security`, `my-plan`, `my-research`, and `my-review` need
+  native subagents.
 - Stop as unsupported when a required role or subagent is missing.
 - Do not replace independent review with self-review.
 

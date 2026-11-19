@@ -208,7 +208,7 @@ does not create duplicate Grok skill links.
 | Source                                  | Purpose                                                        |
 | --------------------------------------- | -------------------------------------------------------------- |
 | `.agents/AGENTS.md`                     | Concise working rules, safety defaults, and verification.      |
-| `.agents/skills/my-*/SKILL.md`          | Thirteen portable workflows.                                   |
+| `.agents/skills/my-*/SKILL.md`          | Fourteen portable workflows.                                   |
 | `.agents/personas/my-humble-servant.md` | Plain Markdown persona body.                                   |
 | `.agents/agents/_my-*.md`               | Four shared specialist instruction bodies.                     |
 | `.agents/references/orchestration.md`   | Shared scheduling, build-loop, and recovery rules.             |
@@ -281,6 +281,7 @@ and makes no network requests. See
 | `my-explain`             | Explain code or a concept.                       |
 | `my-plan`                | Explore and scope work before coding.            |
 | `my-pr`                  | Prepare and open a pull request with approval.   |
+| `my-research`            | Research a question and map the possibilities.   |
 | `my-review`              | Review a diff with an independent reviewer.      |
 | `my-security`            | Audit code with an independent reviewer.         |
 | `my-test`                | Find and run the project's tests.                |
@@ -305,17 +306,20 @@ you dispatch a Grok reviewer. It cannot run Git commands or tests. These tool
 restrictions are not a filesystem sandbox. Grok's implementer can read, edit, and run shell commands.
 See [Grok subagents](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md).
 
-`my-plan` dispatches `_my-explorer` for read-only code and web research. Each
-harness that installs it gives it read, search, shell, and web tools.
+`my-plan` and `my-research` dispatch `_my-explorer` for read-only code and web
+research. Each harness that installs it gives it read, search, shell, and web
+tools.
 Explorer profiles omit native edit tools or restrict edit permissions. It is
 read-only by instruction on Claude, OpenCode, Copilot, and Grok. The Grok
 explorer profile disables MCP access. Grok `web_fetch` works only when
 `features.web_fetch` is on.
 
-`my-plan` and `my-build` keep no state on disk. `my-plan` hands off a
-`## Plan` block in the conversation.
+`my-plan`, `my-research`, and `my-build` keep no state on disk. `my-plan` hands
+off a `## Plan` block in the conversation. `my-research` hands off its answer
+block in the conversation.
 
-`my-plan`, `my-build`, `my-security`, and `my-review` check required capabilities before work.
+`my-plan`, `my-research`, `my-build`, `my-security`, and `my-review` check
+required capabilities before work.
 They stop as unsupported when their required subagents or roles are absent.
 They do not replace independent review with self-review or sequential execution.
 In `my-build`, only the coordinator commits, after review approves.

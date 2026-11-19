@@ -138,7 +138,7 @@ render_shared_export() {
       my-build) printf ' — requires implementation and review subagents with specialist roles.' ;;
       my-security) printf ' — requires an independent read-only security-reviewer role.' ;;
       my-review) printf ' — requires an independent read-only reviewer role.' ;;
-      my-plan) printf ' — requires an independent read-only explorer role.' ;;
+      my-plan|my-research) printf ' — requires an independent read-only explorer role.' ;;
     esac
     printf '\n'
   done
