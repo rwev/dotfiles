@@ -40,8 +40,12 @@ run files.
 4. Check correctness: logic errors, edge cases, error handling, off-by-ones —
    anything that misbehaves with real inputs.
 5. Check quality: dead code, needless duplication, comments that restate
-   code, naming/style drift from the surrounding file, tautological tests
-   that don't actually assert behavior.
+   the code, narrate the next line, repeat the name or signature, draw a
+   banner or section line, record who changed the code or why the change
+   was made, or run past one sentence without a hidden constraint (a unit,
+   an order, a lifetime, or a rejected alternative), naming/style drift
+   from the surrounding file, tautological tests that don't actually
+   assert behavior.
 6. Check for hardcoded secrets, credentials, or tokens anywhere in the diff —
    flag as Critical regardless of how minor the surrounding change is.
 7. If the task had testable behavior, confirm a real test was actually

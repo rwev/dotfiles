@@ -23,7 +23,11 @@ override these defaults.
 
 - Match the surrounding code: its naming, structure, formatting, and idioms.
 - Reuse what already exists (helpers, patterns, dependencies) before writing anything new.
-- Don't add comments that just restate the code. Comment only non-obvious "why".
+- Write no comment unless the code cannot carry the fact. When you do, say the non-obvious "why", not a restatement of the code.
+- Keep that comment to one sentence. Add a second sentence only for a constraint the code cannot show, such as a unit, an order, a lifetime, or a rejected alternative.
+- Do not narrate the next line, repeat the name or signature, or draw a banner or section line.
+- Do not record who changed the code or why the change was made. Put that in the commit message.
+- If a function needs several comments, rename or split it before you comment it.
 - Prefer the smallest change that solves the problem. Don't refactor unrelated code.
 - Don't leave dead code, TODOs, or commented-out blocks behind.
 
