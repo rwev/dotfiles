@@ -208,11 +208,10 @@ does not create duplicate Grok skill links.
 | Source                                  | Purpose                                                        |
 | --------------------------------------- | -------------------------------------------------------------- |
 | `.agents/AGENTS.md`                     | Concise working rules, safety defaults, and verification.      |
-| `.agents/skills/my-*/SKILL.md`          | Fifteen portable workflows.                                    |
+| `.agents/skills/my-*/SKILL.md`          | Thirteen portable workflows.                                   |
 | `.agents/personas/my-humble-servant.md` | Plain Markdown persona body.                                   |
 | `.agents/agents/_my-*.md`               | Four shared specialist instruction bodies.                     |
 | `.agents/references/orchestration.md`   | Shared scheduling, build-loop, and recovery rules.             |
-| `.agents/references/progress.md`        | Saved run-state rules for the `-tracked` skills.               |
 | `.claude/templates/`                    | Native role and output-style metadata, outside discovery.      |
 | `.opencode/templates/agents/`           | Native role metadata, outside discovery.                       |
 | `.copilot/agents/`                      | Native Copilot role metadata.                                  |
@@ -275,14 +274,12 @@ and makes no network requests. See
 | Skill                    | Purpose                                          |
 | ------------------------ | ------------------------------------------------ |
 | `my-build`               | Implement tasks with subagents and review.       |
-| `my-build-tracked`       | `my-build` with saved run state.                 |
 | `my-capture-knowledge`   | Save session findings at the workspace root.     |
 | `my-commit`              | Stage and commit with a concise message.         |
 | `my-debug`               | Diagnose a failure without applying a fix.       |
 | `my-deps`                | Explain a dependency and its uses.               |
 | `my-explain`             | Explain code or a concept.                       |
 | `my-plan`                | Explore and scope work before coding.            |
-| `my-plan-tracked`        | `my-plan` with saved run state.                  |
 | `my-pr`                  | Prepare and open a pull request with approval.   |
 | `my-review`              | Review a diff with an independent reviewer.      |
 | `my-security`            | Audit code with an independent reviewer.         |
@@ -315,11 +312,10 @@ read-only by instruction on Claude, OpenCode, Copilot, and Grok. The Grok
 explorer profile disables MCP access. Grok `web_fetch` works only when
 `features.web_fetch` is on.
 
-Light `my-plan` and `my-build` keep no state on disk; `my-plan` hands off a
-`## Plan` block in the conversation. The `-tracked` variants add saved run
-state under `.agents/work/` from `.agents/references/progress.md`.
+`my-plan` and `my-build` keep no state on disk. `my-plan` hands off a
+`## Plan` block in the conversation.
 
-`my-plan`, `my-build`, their `-tracked` variants, `my-security`, and `my-review` check required capabilities before work.
+`my-plan`, `my-build`, `my-security`, and `my-review` check required capabilities before work.
 They stop as unsupported when their required subagents or roles are absent.
 They do not replace independent review with self-review or sequential execution.
 In `my-build`, only the coordinator commits, after review approves.

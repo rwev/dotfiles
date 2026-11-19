@@ -8,8 +8,7 @@ description: >-
   planned before code is written (e.g. "how would we approach X", "plan this
   out", "what would it take to do X", "scope this change", "plan this out in
   depth", "what do we need to decide before starting X"). SKIP when they want
-  it built — use my-build instead. SKIP when they ask for a tracked,
-  resumable, or persisted plan — use my-plan-tracked instead.
+  it built — use my-build instead.
 compatibility: Requires native subagents and the _my-explorer role.
 ---
 

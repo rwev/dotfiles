@@ -5,8 +5,7 @@ description: >-
   TRIGGER — invoke whenever the user wants a non-trivial task actually
   implemented end-to-end, not just planned (e.g. "build X", "implement X",
   "add feature X", "let's get this done"). SKIP for read-only planning — use
-  my-plan instead. SKIP when they ask for a tracked, resumable, or
-  persisted run — use my-build-tracked instead.
+  my-plan instead.
 compatibility: Requires native subagents and _my-implementer and _my-reviewer roles.
 ---
 
