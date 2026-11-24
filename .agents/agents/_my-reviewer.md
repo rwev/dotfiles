@@ -50,7 +50,9 @@ run files.
    flag as Critical regardless of how minor the surrounding change is.
 7. If the task had testable behavior, confirm a real test was actually
    added or updated for it — an implementation with no corresponding test
-   is a spec-compliance gap, not just a quality nitpick.
+   is a spec-compliance gap, not just a quality nitpick. Flag tests that
+   miss agreed seams, mock a module this repo owns, or compute expected
+   values with the code's own logic.
 8. Run a single focused test only if a specific doubt arises and you have
    a shell — never the full suite; keep this cheap. Tests can write
    resources: use only supplied safe or isolated resources under the

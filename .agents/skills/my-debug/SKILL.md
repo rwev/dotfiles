@@ -13,7 +13,9 @@ description: >-
 Bug/failure: the thing the user just asked about.
 
 No fix without a confirmed root cause. A fix without one is a guess — don't
-offer it.
+offer it. Before any hypothesis, name one tight command, run it, and show
+that it fails on this exact symptom. Do not form a theory without that
+result.
 
 1. Reproduce the failure reliably. If it's intermittent, note the
    reproduction rate honestly rather than claiming a clean repro; if you
@@ -30,8 +32,8 @@ offer it.
    fine — the only reason to edit code here. Add targeted logging at
    component boundaries, narrow down the failure one hypothesis at a time.
 5. Once you can point at the exact `file:line` and mechanism, confirm the
-   theory: show the failure disappears (or the assertion flips) when your
-   hypothesized cause is addressed in isolation.
+   cause: show that this command passes when the hypothesized cause is
+   addressed in isolation.
 6. Remove all your own instrumentation before reporting. `git diff` must come
    back clean of it — leave the tree as you found it.
 

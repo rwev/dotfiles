@@ -54,7 +54,8 @@ Do not edit files or write code. Follow
    before work starts (perf cliffs, migration pain, security exposure).
 7. Once every decision is resolved, write a `## Plan` block in the
    conversation for `my-build`: files that would change, decisions made
-   (asked and autonomous) with reasons, ordered tasks with owned paths, and
+   (asked and autonomous) with reasons, ordered tasks with owned paths,
+   blockers for each task, test seams (public boundaries to test at), and
    key `file:line` findings.
 
 Keep it concrete. If the task is trivial once explored, say so and skip

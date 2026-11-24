@@ -33,7 +33,7 @@ start. Follow its Build loop detail, Scheduling, and Recovery rules.
    Implementation approval does not authorize commits.
 3. **Check** — Confirm branch and repo state. Note pre-existing changes.
 4. **Implement batch** — Dispatch `_my-implementer` for dependency-ready
-   tasks under scheduling rules.
+   tasks under scheduling rules. Run tasks in blocker order.
 5. **Join** — Join writers. Freeze review inputs. Run required shared checks.
 6. **Review** — Dispatch a fresh `_my-reviewer` for each new or changed
    diff. Resume the same reviewer only for an interrupted review or a
@@ -48,10 +48,11 @@ start. Follow its Build loop detail, Scheduling, and Recovery rules.
 
 Give each role a full brief; it has no other context.
 
-- `_my-implementer`: task text and requirements, global constraints, and
-  approval status (it never commits), relevant findings, owned paths and
-  resource limits, and a notice that it is not alone.
-- `_my-reviewer`: the same context, plus a `base..head` range if committed.
+- `_my-implementer`: task text and requirements, agreed seams, global
+  constraints, and approval status (it never commits), relevant findings,
+  owned paths and resource limits, and a notice that it is not alone.
+- `_my-reviewer`: the same context, including agreed seams, plus a
+  `base..head` range if committed.
   Otherwise supply the pre-existing changes to ignore, and the staged,
   unstaged, and untracked changes scoped to its owned paths. Start it fresh, with no conversation
   history forked or inherited from you.
