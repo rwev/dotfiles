@@ -1,11 +1,11 @@
 ---
 name: my-review
 description: >-
-  Review a diff for spec compliance and code quality.
-  TRIGGER — invoke whenever the user wants a code-quality review of the
+  Review a diff for logic, regressions, and test coverage.
+  TRIGGER — invoke whenever the user wants a review of the
   current diff or a named range (e.g. "review this", "code review",
-  "check this for quality issues"). SKIP for security-only audits — use
-  my-security; this is quality and spec compliance, not a security audit.
+  "check this for bugs"). SKIP for security-only audits — use
+  my-security; this is logic and coverage, not a security audit.
 compatibility: Requires native subagents and the _my-reviewer role.
 ---
 

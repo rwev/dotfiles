@@ -11,17 +11,22 @@ Use these rules from `my-plan`, `my-build`, and related skills.
 - On `BLOCKED`: stop and report the technical failure.
 - On `DONE_WITH_CONCERNS`: read the concerns. Resolve them, or send them to
   review as findings.
-- On reviewer `Verdict: Needs context`: supply the missing context, then
-  resume the same reviewer.
-- Join writers and freeze review inputs before review or shared checks.
-- Send Critical/Important findings to the same implementer, then to a fresh
-  reviewer. After two failed fix attempts on the same finding, ask. Do not
-  retry silently.
-- Mark a task completed only after tests pass and review approves.
+- On reviewer or enforcer `Verdict: Needs context`: supply the missing
+  context, then resume the same agent.
+- Join writers and freeze review inputs before review, enforcement, or
+  shared checks.
+- Send Critical/Important reviewer findings to the same implementer, then
+  to a fresh reviewer, then a fresh enforcer. On enforcer `Needs shrinks`,
+  send them to the same implementer, then a fresh reviewer, then the
+  enforcer on the new hunks. After two failed fix attempts on the same
+  finding, ask. Do not retry silently.
+- Mark a task completed only after tests pass, review approves, and the
+  enforcer approves.
 - Only the coordinator commits. Implementers never stage or commit; they
   report changed paths in `Files:`. When commits are authorized, stage those
-  paths explicitly. Commit serially after writers stop and review approves.
-  Write a concise conventional-commit message scoped to the task.
+  paths explicitly. Commit serially after writers stop, review approves,
+  and the enforcer approves. Write a concise conventional-commit message
+  scoped to the task.
 
 ## Scheduling
 
@@ -47,16 +52,16 @@ Use these rules from `my-plan`, `my-build`, and related skills.
   resources, or isolation. The coordinator runs broad or shared checks
   serially after joining. Run required verification once per stable batch.
   Do not skip checks.
-- Approve tests and review before you unlock dependents. Apply the same claims
-  and gates to fixes. Never overlap a review with writers on its evidence.
+- Approve tests, review, and enforcement before you unlock dependents. Apply the same claims
+  and gates to fixes. Never overlap a review or enforcement with writers on its evidence.
 
 ## Recovery
 
 - After an interruption or a context gap, resume the same native agent
-  (explorer, implementer, or reviewer). Do this also when no state is on disk.
-- Resume the same implementer for review fixes.
-- Resume a reviewer only for an interrupted review of the same diff. Use a
-  fresh independent reviewer for a new round or a changed diff.
+  (explorer, implementer, reviewer, or enforcer). Do this also when no state is on disk.
+- Resume the same implementer for review or enforcer fixes.
+- Resume a reviewer or enforcer only for an interrupted pass of the same
+  diff. Use a fresh independent agent for a new round or a changed diff.
 - Replace an agent only when native resume is not available and the prior
   writer cannot still write. A continuing usage or quota error does not prove
   that resume is not available. If you cannot establish this, stop and report
