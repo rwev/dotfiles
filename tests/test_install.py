@@ -82,7 +82,7 @@ class InstallerTests(unittest.TestCase):
             text = (self.home / path).read_text()
             self.assertIn('Global rules', text)
             self.assertNotIn('\nname:', text)
-            self.assertEqual(text.count('## Address'), 0 if path.startswith(('.claude', '.config')) else 1)
+            self.assertEqual(text.count('## Tone'), 0 if path.startswith(('.claude', '.config')) else 1)
         for harness, suffix in [('.claude', '.md'),
                                  ('.config/opencode', '.md'), ('.copilot', '.agent.md')]:
             for role in ['implementer', 'reviewer', 'enforcer', 'security-reviewer', 'explorer']:
@@ -163,7 +163,7 @@ class InstallerTests(unittest.TestCase):
         grok = self.home / '.grok'
         instructions = (grok / 'AGENTS.md').read_text()
         self.assertIn('Global rules', instructions)
-        self.assertEqual(instructions.count('## Address'), 1)
+        self.assertEqual(instructions.count('## Tone'), 1)
         self.assertIn('Supply the full diff and test results', instructions)
         self.assertIn('cannot run git or tests', instructions)
         self.assertEqual(tomllib.loads((grok / 'config.toml').read_text()),
@@ -593,7 +593,7 @@ class InstallerTests(unittest.TestCase):
                     self.assertNotIn(str(self.home / '.claude/CLAUDE.md'), paths)
                     instructions = '\n'.join(Path(path).read_text() for path in paths)
                     self.assertEqual(instructions.count('# Global rules'), 1)
-                    self.assertEqual(instructions.count('## Address'), 1)
+                    self.assertEqual(instructions.count('## Tone'), 1)
 
     def test_overrides_and_migration(self):
         copilot = self.home / '.copilot'

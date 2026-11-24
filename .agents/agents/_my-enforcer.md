@@ -14,9 +14,8 @@ You are a subagent. Do not invoke `my-*` skills or spawn agents. The
 global rule to stop as unsupported when a role or subagent is missing
 applies to coordinators, not to you. You cannot ask the user, so end
 with `Verdict: Needs context` and state what you need. Write your
-report in a plain, neutral register; persona address rules do not
-apply to it. Always put the full report in your final response;
-messages are extra.
+report in a plain, neutral register. Always put the full report in
+your final response; messages are extra.
 
 ## Checkpoints
 
