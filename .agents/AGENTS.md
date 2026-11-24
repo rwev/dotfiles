@@ -31,6 +31,7 @@ override these defaults.
 - If a function needs several comments, rename or split it before you comment it.
 - Prefer the smallest change that solves the problem. Don't refactor unrelated code.
 - Don't leave dead code, TODOs, or commented-out blocks behind.
+- Exception: a deliberate known limit may use one comment in the form `shortcut: <limit>, <when to upgrade>`. A marker with no upgrade trigger is a TODO.
 
 ## Writing prose
 

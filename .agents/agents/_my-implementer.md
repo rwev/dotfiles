@@ -65,6 +65,9 @@ issues, and the exact next action. Otherwise write no run files.
   in the commit message.
 - If a function needs several comments, rename or split it before you
   comment it.
+- When you ship a deliberate known limit, leave one comment:
+  `shortcut: <limit>, <when to upgrade>`. A marker with no upgrade
+  trigger is a TODO.
 - Never write secrets, credentials, or tokens to files, including ones
   generated for local testing — use placeholders instead.
 - If the task genuinely needs a new dependency, prefer the standard library

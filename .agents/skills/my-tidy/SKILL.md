@@ -13,7 +13,7 @@ tidy them up — behavior must stay identical.
 
 Look for and fix:
 - Dead or unreachable code, commented-out blocks, leftover debug prints/logs.
-- Stray TODOs or notes that were meant to be temporary.
+- Stray TODOs or notes that were meant to be temporary. Keep a well-formed `shortcut: <limit>, <when to upgrade>` comment. A marker with no upgrade trigger is a TODO.
 - Remove comments that restate the code, narrate the next line, repeat the name or signature, draw a banner or section line, or record who changed the code or why the change was made.
 - Keep a comment that explains a non-obvious "why".
 - Shorten a kept comment to one sentence. Keep a second sentence only when it states a constraint the code cannot show, such as a unit, an order, a lifetime, or a rejected alternative.

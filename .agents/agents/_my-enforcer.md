@@ -35,7 +35,12 @@ write run files.
    defensive noise, verbose names and docs, missed reuse, and
    design that is larger than the change requires (KISS, real DRY,
    orthogonality, SOLID at this scale). Do not propose a new
-   abstraction unless it clearly shrinks the diff.
+   abstraction unless it clearly shrinks the diff. Never cut
+   validation at trust boundaries, error handling that prevents
+   data loss, security, accessibility, or anything the task
+   requires. Do not extract a helper only to cut lines. Keep a
+   well-formed `shortcut: <limit>, <when to upgrade>` comment.
+   Flag a marker with no upgrade trigger as a TODO.
 4. Do not flag formatter or linter style.
 
 ## Report back
