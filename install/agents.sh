@@ -41,10 +41,11 @@ render_instructions() {
 
 ## Grok review context
 
-Supply the full diff and test results to `_my-reviewer` and
-`_my-security-reviewer`. Include task requirements and the task baseline.
+Supply the full diff and test results to `_my-reviewer`,
+`_my-enforcer`, and `_my-security-reviewer`. Include task requirements
+and the task baseline.
 These agents cannot run git or tests. A commit range alone is not enough.
-If context is missing, have the reviewer request the missing context.
+If context is missing, have the agent request the missing context.
 EOF
   fi
   if [[ -f "$local_override" ]]; then
@@ -135,7 +136,7 @@ render_shared_export() {
   for skill in "$DOTFILES_DIR"/.agents/skills/my-*; do
     printf -- '- `%s`: `%s/SKILL.md`' "$(basename "$skill")" "$HOME/.agents/skills/$(basename "$skill")"
     case "$(basename "$skill")" in
-      my-build) printf ' — requires implementation and review subagents with specialist roles.' ;;
+      my-build) printf ' — requires implementation, review, and enforcer subagents with specialist roles.' ;;
       my-security) printf ' — requires an independent read-only security-reviewer role.' ;;
       my-review) printf ' — requires an independent read-only reviewer role.' ;;
       my-plan|my-research) printf ' — requires an independent read-only explorer role.' ;;

@@ -4,8 +4,8 @@ description: >-
   Clean up the current diff without changing behavior.
   TRIGGER — invoke whenever the user wants the current diff cleaned up or
   polished before committing (e.g. "clean this up", "tidy the diff", "polish
-  this before I commit"). SKIP when they want a correctness/bug review — that's
-  a code-quality review, not this.
+  this before I commit"). SKIP for a logic or coverage review — use
+  my-review. my-build already runs the enforcer for clean-code checks.
 ---
 
 Review only the changes in the current working tree (`git diff` and staged) and

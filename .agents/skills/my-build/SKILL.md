@@ -6,20 +6,21 @@ description: >-
   implemented end-to-end, not just planned (e.g. "build X", "implement X",
   "add feature X", "let's get this done"). SKIP for read-only planning — use
   my-plan instead.
-compatibility: Requires native subagents and _my-implementer and _my-reviewer roles.
+compatibility: Requires native subagents and _my-implementer, _my-reviewer, and _my-enforcer roles.
 ---
 
 Task: the thing the user just asked to have built.
 
-Before building, check native subagents and both `_my-implementer` and
-`_my-reviewer` roles. If any are unavailable, report
-`Unsupported: my-build requires native subagents and both roles` and stop.
-Do not replace delegation with sequential inline work or self-review.
+Before building, check native subagents and the `_my-implementer`,
+`_my-reviewer`, and `_my-enforcer` roles. If any are unavailable, report
+`Unsupported: my-build requires native subagents and its implementer,
+reviewer, and enforcer roles` and stop. Do not replace delegation with
+sequential inline work or self-review.
 Only you, the coordinator, commit. Commit only if the user explicitly
-authorized commits. Commit a task only after review approves; stage its
-implementer's `Files:` paths explicitly. Otherwise keep all tasks
-uncommitted and review their working diffs, including untracked product
-files.
+authorized commits. Commit a task only after review and the enforcer
+approve; stage its implementer's `Files:` paths explicitly. Otherwise
+keep all tasks uncommitted and review their working diffs, including
+untracked product files.
 
 Read [orchestration](~/.agents/references/orchestration.md) before you
 start. Follow its Build loop detail, Scheduling, and Recovery rules.
@@ -38,11 +39,13 @@ start. Follow its Build loop detail, Scheduling, and Recovery rules.
 6. **Review** — Dispatch a fresh `_my-reviewer` for each new or changed
    diff. Resume the same reviewer only for an interrupted review or a
    `Needs context` verdict on the same diff. Always review, even small tasks.
-7. **Fix loop** — On Critical/Important findings, resume the same implementer,
-   then re-review. After two failed attempts on the same finding, ask.
-8. **Final review** — When all tasks are done, review the full range over
-   the union of task-owned paths.
-9. **Hand off** — Point me at `my-pr`. Do not open the PR yourself.
+7. **Enforce** — After review approves, dispatch a fresh `_my-enforcer`
+   for that same frozen diff. Resume it only for an interrupted
+   enforcement or a `Needs context` verdict on the same diff.
+8. **Fix loop** — Follow the Build loop detail.
+9. **Final review** — When all tasks are done, review the full range
+   over the union of task-owned paths.
+10. **Hand off** — Point me at `my-pr`. Do not open the PR yourself.
 
 ## Dispatch payloads
 
@@ -54,8 +57,11 @@ Give each role a full brief; it has no other context.
 - `_my-reviewer`: the same context, including agreed seams, plus a
   `base..head` range if committed.
   Otherwise supply the pre-existing changes to ignore, and the staged,
-  unstaged, and untracked changes scoped to its owned paths. Start it fresh, with no conversation
-  history forked or inherited from you.
+  unstaged, and untracked changes scoped to its owned paths. Start it
+  fresh, with no conversation history forked or inherited from you.
+- `_my-enforcer`: the task, owned paths, the implementer's `Files:`,
+  the frozen diff, and the reviewer's findings. Start it fresh, with
+  no conversation history forked or inherited from you.
 
 ## Rules
 
@@ -65,5 +71,5 @@ Give each role a full brief; it has no other context.
 - Do not pause between tasks to ask "should I continue?" Keep going until
   every task is done or something is blocked.
 - Follow the Build loop detail for `NEEDS_CONTEXT` (read its `Question:`),
-  `BLOCKED`, `DONE_WITH_CONCERNS`, and reviewer `Verdict: Needs context`.
+  `BLOCKED`, `DONE_WITH_CONCERNS`, and reviewer or enforcer `Verdict: Needs context`.
 - Keep each implementer's `Files:` for commits and review scope.

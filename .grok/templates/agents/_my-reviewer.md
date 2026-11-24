@@ -1,6 +1,6 @@
 ---
 name: _my-reviewer
-description: Reviews one task's diff for spec compliance and code quality. Supply the task requirements, baseline, full diff and test results. Cannot run git or tests; request missing context.
+description: Reviews one task's diff for logic, regressions, and test coverage. Supply the task requirements, baseline, full diff and test results. Cannot run git or tests; request missing context.
 tools: read_file, grep, list_dir, todo_write
 disallowedTools: search_tool, use_tool
 mcpInheritance: none

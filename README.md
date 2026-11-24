@@ -210,7 +210,7 @@ does not create duplicate Grok skill links.
 | `.agents/AGENTS.md`                     | Concise working rules, safety defaults, and verification.      |
 | `.agents/skills/my-*/SKILL.md`          | Fourteen portable workflows.                                   |
 | `.agents/personas/my-humble-servant.md` | Plain Markdown persona body.                                   |
-| `.agents/agents/_my-*.md`               | Four shared specialist instruction bodies.                     |
+| `.agents/agents/_my-*.md`               | Five shared specialist instruction bodies.                     |
 | `.agents/references/orchestration.md`   | Shared scheduling, build-loop, and recovery rules.             |
 | `.claude/templates/`                    | Native role and output-style metadata, outside discovery.      |
 | `.opencode/templates/agents/`           | Native role metadata, outside discovery.                       |
@@ -273,7 +273,7 @@ and makes no network requests. See
 
 | Skill                    | Purpose                                          |
 | ------------------------ | ------------------------------------------------ |
-| `my-build`               | Implement tasks with subagents and review.       |
+| `my-build`               | Implement tasks with subagents, review, and enforcement. |
 | `my-capture-knowledge`   | Save session findings at the workspace root.     |
 | `my-commit`              | Stage and commit with a concise message.         |
 | `my-debug`               | Diagnose a failure without applying a fix.       |
@@ -292,17 +292,18 @@ Use native invocation syntax: `/my-commit` in Claude, or ask the CLI to use
 the named skill. Syntax depends on the harness.
 
 The Claude, OpenCode, Copilot, and Grok adapters install
-`_my-implementer`, `_my-reviewer`, `_my-security-reviewer`, and
-`_my-explorer`. Reviewer profiles omit native
-edit tools or restrict edit permissions. Claude, OpenCode, and Copilot
-reviewers still have shell access, so they are read-only by instruction
-only. Those settings and prompts are not enforced filesystem isolation.
+`_my-implementer`, `_my-reviewer`, `_my-enforcer`,
+`_my-security-reviewer`, and `_my-explorer`. Reviewer and enforcer
+profiles omit native edit tools or restrict edit permissions. Claude,
+OpenCode, and Copilot reviewers and enforcers still have shell access, so
+they are read-only by instruction only. Those settings and prompts are
+not enforced filesystem isolation.
 OpenCode roles deny the `task` tool, so
 they cannot spawn an editing subagent. The Claude, Copilot, and Grok security
 reviewers also get web tools for CVE checks.
-Grok reviewer profiles omit shell and edit tools and disable MCP access.
+Grok reviewer and enforcer profiles omit shell and edit tools and disable MCP access.
 Supply the full diff, test results, task requirements, and task baseline when
-you dispatch a Grok reviewer. It cannot run Git commands or tests. These tool
+you dispatch a Grok reviewer or enforcer. They cannot run Git commands or tests. These tool
 restrictions are not a filesystem sandbox. Grok's implementer can read, edit, and run shell commands.
 See [Grok subagents](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md).
 
@@ -322,7 +323,7 @@ block in the conversation.
 required capabilities before work.
 They stop as unsupported when their required subagents or roles are absent.
 They do not replace independent review with self-review or sequential execution.
-In `my-build`, only the coordinator commits, after review approves.
+In `my-build`, only the coordinator commits, after review and the enforcer approve.
 Implementers never commit; they list changed paths for explicit staging.
 
 ### Local overrides and migration

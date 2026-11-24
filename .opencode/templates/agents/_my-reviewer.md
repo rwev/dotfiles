@@ -1,5 +1,5 @@
 ---
-description: Reviews one task's diff for spec compliance and code quality. Dispatch with the task's requirements and a base..head SHA range or uncommitted diff — it has no other context.
+description: Reviews one task's diff for logic, regressions, and test coverage. Dispatch with the task's requirements and a base..head SHA range or uncommitted diff — it has no other context.
 mode: subagent
 permission:
   edit: deny
