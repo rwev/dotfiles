@@ -314,10 +314,9 @@ read-only by instruction on Claude, OpenCode, Copilot, and Grok. The Grok
 explorer profile disables MCP access. Grok `web_fetch` works only when
 `features.web_fetch` is on.
 
-`my-plan`, `my-research`, and `my-build` keep no state on disk. `my-plan`
-hands off a `## Plan` block in the conversation: decisions, test seams,
-demoable slices with blockers, and `file:line` findings. `my-research`
-hands off its answer block in the conversation.
+`my-plan`, `my-research`, and `my-build` keep no state on disk. `my-plan` hands
+off a `## Plan` block in the conversation. `my-research` hands off its answer
+block in the conversation.
 
 `my-plan`, `my-research`, `my-build`, `my-security`, and `my-review` check
 required capabilities before work.

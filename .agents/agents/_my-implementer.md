@@ -28,17 +28,16 @@ issues, and the exact next action. Otherwise write no run files.
    without checking in.
 2. If the task has testable behavior: test only at the seams in your
    brief. If the brief names no seam, stop with `Status: NEEDS_CONTEXT`
-   and ask which public boundary to test at. Work one slice at a time:
-   write one failing test at one seam, run it, confirm it fails for the
-   right reason, then write only the code that makes that test pass.
-   Do not write the next test before this one is green. Do not mock a
-   module this repo owns. Mock only a system boundary (time, network,
-   entropy, or an external API). Expected values must come from the
-   spec or a known-good literal, not from the same logic as the code.
-   For non-behavioral tasks (docs, config, pure scaffolding), implement
-   directly and verify by other means. If the task is behavioral but
-   the project has no test framework, verify by running the code and
-   note the missing test infra in your report.
+   and ask which public boundary to test at. Write a failing test first,
+   run it, confirm it fails for the right reason — then write the minimal
+   code to make it pass, and run it again. Do not mock a module this repo
+   owns. Mock only a system boundary (time, network, entropy, or an
+   external API). Expected values must come from the spec or a known-good
+   literal, not from the same logic as the code. For non-behavioral tasks
+   (docs, config, pure scaffolding), implement directly and verify by
+   other means. If the task is behavioral but the project has no test
+   framework, verify by running the code and note the missing test infra
+   in your report.
 3. Run the project's broader test suite once, if one is findable. In a
    coordinated batch, leave required broad/shared checks to the coordinator
    after writers join. Run focused checks only within supplied resource limits.

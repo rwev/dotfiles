@@ -27,17 +27,13 @@ start. Follow its Build loop detail, Scheduling, and Recovery rules.
 ## Phase checklist
 
 1. **Plan** — Use the `## Plan` block from `my-plan` in this conversation,
-   if present. Do not reopen settled decisions. Treat its slices as the
-   task list, in blocker order, and keep the named seams. Otherwise
-   explore, resolve only high-importance, high-rework decisions, and
-   write the same Plan shape (decisions, seams, slices with blockers,
-   owned paths). Confirm seams before product edits.
-2. **Approve** — Show the slices, their demos, blockers, and seams.
-   Get go-ahead before product edits.
+   if present. Otherwise explore.
+   Resolve only high-importance, high-rework decisions with the user.
+2. **Approve** — Show the task list. Get go-ahead before product edits.
    Implementation approval does not authorize commits.
 3. **Check** — Confirm branch and repo state. Note pre-existing changes.
 4. **Implement batch** — Dispatch `_my-implementer` for dependency-ready
-   slices under scheduling rules. One slice is one task.
+   tasks under scheduling rules. Run tasks in blocker order.
 5. **Join** — Join writers. Freeze review inputs. Run required shared checks.
 6. **Review** — Dispatch a fresh `_my-reviewer` for each new or changed
    diff. Resume the same reviewer only for an interrupted review or a
@@ -52,20 +48,19 @@ start. Follow its Build loop detail, Scheduling, and Recovery rules.
 
 Give each role a full brief; it has no other context.
 
-- `_my-implementer`: the slice text, its demo, blockers, and agreed seams,
-  global constraints, approval status (it never commits), relevant
-  findings, owned paths and resource limits, and a notice that it is
-  not alone.
-- `_my-reviewer`: the same context, including the agreed seams, plus a
-  `base..head` range if committed. Otherwise supply the pre-existing
-  changes to ignore, and the staged, unstaged, and untracked changes
-  scoped to its owned paths. Start it fresh, with no conversation
+- `_my-implementer`: task text and requirements, agreed seams, global
+  constraints, and approval status (it never commits), relevant findings,
+  owned paths and resource limits, and a notice that it is not alone.
+- `_my-reviewer`: the same context, including agreed seams, plus a
+  `base..head` range if committed.
+  Otherwise supply the pre-existing changes to ignore, and the staged,
+  unstaged, and untracked changes scoped to its owned paths. Start it fresh, with no conversation
   history forked or inherited from you.
 
 ## Rules
 
-- Right-size tasks; one small deliverable may stay one slice.
-  Each slice must be demoable on its own.
+- Right-size tasks; one small deliverable
+  may stay one task.
 - Hold global constraints yourself and paste them into every dispatch.
 - Do not pause between tasks to ask "should I continue?" Keep going until
   every task is done or something is blocked.
