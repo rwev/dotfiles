@@ -45,7 +45,7 @@ Supply the full diff and test results to `_my-reviewer`,
 `_my-enforcer`, and `_my-security-reviewer`. Include task requirements
 and the task baseline.
 These agents cannot run git or tests. A commit range alone is not enough.
-If context is missing, have the reviewer request the missing context.
+If context is missing, have the agent request the missing context.
 EOF
   fi
   if [[ -f "$local_override" ]]; then

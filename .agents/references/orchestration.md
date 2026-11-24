@@ -15,10 +15,10 @@ Use these rules from `my-plan`, `my-build`, and related skills.
   context, then resume the same agent.
 - Join writers and freeze review inputs before review, enforcement, or
   shared checks.
-- Send Critical/Important reviewer findings to the same implementer, then
-  to a fresh reviewer, then a fresh enforcer. On enforcer `Needs shrinks`,
-  send them to the same implementer, then a fresh reviewer, then the
-  enforcer on the new hunks. After two failed fix attempts on the same
+- Send Critical/Important reviewer findings or enforcer `Needs shrinks`
+  to the same implementer, then to a fresh reviewer. Enforce only after
+  that reviewer Approves: dispatch a fresh enforcer on the task's
+  updated frozen diff. After two failed fix attempts on the same
   finding, ask. Do not retry silently.
 - Mark a task completed only after tests pass, review approves, and the
   enforcer approves.

@@ -42,13 +42,9 @@ start. Follow its Build loop detail, Scheduling, and Recovery rules.
 7. **Enforce** — After review approves, dispatch a fresh `_my-enforcer`
    for that same frozen diff. Resume it only for an interrupted
    enforcement or a `Needs context` verdict on the same diff.
-8. **Fix loop** — On reviewer Critical/Important findings, resume the
-   same implementer, then a fresh reviewer, then a fresh enforcer. On
-   enforcer `Needs shrinks`, resume the same implementer, then a fresh
-   reviewer, then the enforcer on the new hunks. After two failed
-   attempts on the same finding, ask.
+8. **Fix loop** — Follow the Build loop detail.
 9. **Final review** — When all tasks are done, review the full range
-   over the union of task-owned paths, then enforce that range.
+   over the union of task-owned paths.
 10. **Hand off** — Point me at `my-pr`. Do not open the PR yourself.
 
 ## Dispatch payloads
@@ -63,9 +59,9 @@ Give each role a full brief; it has no other context.
   Otherwise supply the pre-existing changes to ignore, and the staged,
   unstaged, and untracked changes scoped to its owned paths. Start it
   fresh, with no conversation history forked or inherited from you.
-- `_my-enforcer`: the same context as the reviewer, plus the
-  reviewer's findings and the implementer's `Files:`. Start it
-  fresh, with no conversation history forked or inherited from you.
+- `_my-enforcer`: the task, owned paths, the implementer's `Files:`,
+  the frozen diff, and the reviewer's findings. Start it fresh, with
+  no conversation history forked or inherited from you.
 
 ## Rules
 

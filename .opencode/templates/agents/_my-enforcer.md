@@ -1,5 +1,5 @@
 ---
-description: Enforce clean-code principles on one task's diff: shrink cruft and bloat. Dispatch with the task, seams, owned paths, Files:, the frozen diff, and reviewer findings — it has no other context.
+description: Enforce clean-code principles on one task's diff: shrink cruft and bloat. Dispatch with the task, owned paths, Files:, the frozen diff, and reviewer findings — it has no other context.
 mode: subagent
 permission:
   edit: deny
