@@ -19,8 +19,7 @@ If either is unavailable, report
 `Unsupported: my-plan requires native subagents and its explorer role` and
 stop. Do not substitute inline exploration for the required subagent.
 
-Do not write product code. You may create or update `GLOSSARY.md` or an ADR
-as specified below. Follow
+Do not edit files or write code. Follow
 [orchestration](~/.agents/references/orchestration.md).
 
 1. Dispatch one `_my-explorer` per distinct, useful question, each with a
@@ -57,17 +56,9 @@ as specified below. Follow
    batch within its limits. Otherwise ask in conversation. Wait for
    answers before the next round. Then recompute the frontier. If an
    answer reveals another high-bar decision, include it in the next round.
-5. If the repo has a `GLOSSARY.md`, use its terms and challenge a conflict
-   at once. When a term resolves, write it there immediately — create the
-   file at the repo root if it does not exist. Write only the term, a short
-   definition, and a term to avoid if one exists. Do not put implementation
-   detail in it. Offer an ADR under `docs/adr/` only when the decision is
-   hard to reverse, surprising without context, and the result of a real
-   trade-off. Otherwise leave the decision in the plan. Never write these
-   files under an `.agents` path.
-6. Separately, call out risks that need no decision but should be known
+5. Separately, call out risks that need no decision but should be known
    before work starts (perf cliffs, migration pain, security exposure).
-7. Once the frontier is empty, write a `## Plan` block in the conversation
+6. Once the frontier is empty, write a `## Plan` block in the conversation
    for `my-build`. Use this shape:
 
    ```
@@ -83,9 +74,6 @@ as specified below. Follow
    | ID | Slice | Demo | Blocked by | Owned paths |
    | -- | ----- | ---- | ---------- | ----------- |
    | 1  | <name> | <end-to-end behaviour> | none | <paths> |
-
-   ### Glossary
-   - <term>: <short definition> (or "none")
 
    ### Findings
    - <file:line> — <fact>

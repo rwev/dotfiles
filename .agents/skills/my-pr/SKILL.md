@@ -14,30 +14,8 @@ Prepare a pull request for the current branch.
    whether the base has moved since the branch diverged; flag likely conflicts
    rather than opening a PR that won't merge cleanly. If there's no remote or
    `gh` isn't authenticated, say so rather than failing partway through.
-2. Draft a PR title (concise, imperative) and a body in this shape:
-
-   ```
-   ## Summary
-
-   <the smallest tree, pseudocode, or call flow that makes the change clear>
-
-   ## Why
-
-   <one short paragraph or bullets>
-
-   ## Evidence
-
-   - **Before:** <failing test, command output, or behaviour>
-   - **After:** <passing test, command output, or behaviour>
-
-   ## Merge danger
-
-   - **Door:** one-way or two-way
-   - **Blast radius:** <one or two words, plus a line if needed>
-   ```
-
-   Note testing and follow-ups only when they exist. Use terms from
-   `GLOSSARY.md` when that file exists.
+2. Draft a PR title (concise, imperative) and a body: a short "what & why" summary,
+   notable changes as bullets, and any testing notes or follow-ups.
 3. Show me the title and body first. Only after I confirm, push the branch if needed
    and open the PR with `gh pr create`.
 

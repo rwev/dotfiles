@@ -208,11 +208,10 @@ does not create duplicate Grok skill links.
 | Source                                  | Purpose                                                        |
 | --------------------------------------- | -------------------------------------------------------------- |
 | `.agents/AGENTS.md`                     | Concise working rules, safety defaults, and verification.      |
-| `.agents/skills/my-*/SKILL.md`          | Fifteen portable workflows.                                    |
+| `.agents/skills/my-*/SKILL.md`          | Fourteen portable workflows.                                   |
 | `.agents/personas/my-humble-servant.md` | Plain Markdown persona body.                                   |
 | `.agents/agents/_my-*.md`               | Four shared specialist instruction bodies.                     |
 | `.agents/references/orchestration.md`   | Shared scheduling, build-loop, and recovery rules.             |
-| `.agents/references/writing-skills.md`  | Checklist for skills and other agent-facing docs.              |
 | `.claude/templates/`                    | Native role and output-style metadata, outside discovery.      |
 | `.opencode/templates/agents/`           | Native role metadata, outside discovery.                       |
 | `.copilot/agents/`                      | Native Copilot role metadata.                                  |
@@ -284,7 +283,6 @@ and makes no network requests. See
 | `my-pr`                  | Prepare and open a pull request with approval.   |
 | `my-research`            | Research a question and map the possibilities.   |
 | `my-review`              | Review a diff with an independent reviewer.      |
-| `my-retro`               | Propose environment improvements after a session.|
 | `my-security`            | Audit code with an independent reviewer.         |
 | `my-test`                | Find and run the project's tests.                |
 | `my-tidy`                | Clean the current diff without behavior changes. |
@@ -316,12 +314,10 @@ read-only by instruction on Claude, OpenCode, Copilot, and Grok. The Grok
 explorer profile disables MCP access. Grok `web_fetch` works only when
 `features.web_fetch` is on.
 
-`my-plan`, `my-research`, and `my-build` keep no run state on disk. `my-plan`
+`my-plan`, `my-research`, and `my-build` keep no state on disk. `my-plan`
 hands off a `## Plan` block in the conversation: decisions, test seams,
-demoable slices with blockers, and `file:line` findings. It may write a
-`GLOSSARY.md` at the repo root, or a sparse ADR, when a term or a hard
-decision resolves. `my-research` hands off its answer block in the
-conversation.
+demoable slices with blockers, and `file:line` findings. `my-research`
+hands off its answer block in the conversation.
 
 `my-plan`, `my-research`, `my-build`, `my-security`, and `my-review` check
 required capabilities before work.
