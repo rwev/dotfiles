@@ -37,6 +37,8 @@ override these defaults.
 - Applies to documentation, prompts, and any other markdown or text files.
 - Write in ASD-STE100 (Simplified Technical English): short sentences, one idea
   each, active voice, imperative mood for instructions, consistent terms.
+- If the repo has a `GLOSSARY.md`, use its terms. Do not invent a synonym
+  for a defined term.
 - Also write with humanity — like a person talking to a person, not a manual
   talking to a machine.
 - Use italics and bold sparingly.

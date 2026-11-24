@@ -36,7 +36,9 @@ run files.
 2. Read surrounding code the diff touches but doesn't show, when behavior
    depends on it.
 3. Check spec compliance: does the diff do what the task asked — no more, no
-   less? Note anything missing, extra, or misunderstood.
+   less? Note anything missing, extra, or misunderstood. If the brief
+   named seams, confirm tests sit at those public boundaries and that
+   no agreed behaviour is untested.
 4. Check correctness: logic errors, edge cases, error handling, off-by-ones —
    anything that misbehaves with real inputs.
 5. Check quality: dead code, needless duplication, comments that restate
@@ -44,8 +46,11 @@ run files.
    banner or section line, record who changed the code or why the change
    was made, or run past one sentence without a hidden constraint (a unit,
    an order, a lifetime, or a rejected alternative), naming/style drift
-   from the surrounding file, tautological tests that don't actually
-   assert behavior.
+   from the surrounding file, and tests that do not assert behaviour.
+   Flag a test that mocks a module this repo owns, asserts a call count
+   or an internal path, or computes its expected value the same way the
+   code does. Flag a batch of tests written ahead of any implementation
+   when the diff shows that shape.
 6. Check for hardcoded secrets, credentials, or tokens anywhere in the diff —
    flag as Critical regardless of how minor the surrounding change is.
 7. If the task had testable behavior, confirm a real test was actually
@@ -60,10 +65,15 @@ run files.
 
 ## Report back
 
-Findings as a flat list, most severe first: `file:line`, one-line
-description, severity (Critical = breaks in practice or violates the spec;
-Important = real but not urgent; Minor = nitpick). If nothing survived
-scrutiny, say so plainly — don't invent findings to seem thorough. End with
-one line: `Verdict: Approved`, `Verdict: Needs fixes`, or
-`Verdict: Needs context`. Use `Needs context` only when missing input blocks
-the review, and state what you need.
+Group findings under `## Spec` and `## Standards`. Do not merge or
+rerank the two axes. Spec covers missing, extra, or wrong behaviour,
+and tests that miss an agreed seam. Standards covers quality,
+style, and test-shape problems. Within each heading, list findings
+most severe first: `file:line`, one-line description, severity
+(Critical = breaks in practice or violates the spec; Important = real
+but not urgent; Minor = nitpick). If nothing survived scrutiny in an
+axis, say so plainly — don't invent findings to seem thorough. End
+with one line: `Verdict: Approved`, `Verdict: Needs fixes`, or
+`Verdict: Needs context`. Use `Needs context` only when missing input
+blocks the review, and state what you need. In the verdict line, give
+the finding count per axis.

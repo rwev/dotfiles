@@ -18,6 +18,9 @@ Use these rules from `my-plan`, `my-build`, and related skills.
   reviewer. After two failed fix attempts on the same finding, ask. Do not
   retry silently.
 - Mark a task completed only after tests pass and review approves.
+- When a `## Plan` block exists, do not reopen settled decisions.
+  Implement one slice at a time, in blocker order. Pass each slice's
+  seams, demo, blockers, and owned paths in the implementer brief.
 - Only the coordinator commits. Implementers never stage or commit; they
   report changed paths in `Files:`. When commits are authorized, stage those
   paths explicitly. Commit serially after writers stop and review approves.
