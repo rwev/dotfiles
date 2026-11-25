@@ -29,13 +29,33 @@ write run files.
    diff. If you have no diff, end with `Verdict: Needs context`.
 2. Stay inside this task's diff. Do not expand scope or churn
    outside it. Do not undo a finding the reviewer required.
-3. Hunt for cruft, bloat, and verbosity in source and in tests:
-   dead code, leftover logs, redundant comments, needless wrappers,
-   defensive noise, verbose names and docs, missed reuse, and
-   design that is larger than the change requires (KISS, real DRY,
-   orthogonality, SOLID at this scale). Do not propose a new
-   abstraction unless it clearly shrinks the diff.
-4. Do not flag formatter or linter style.
+3. Hunt for cruft, bloat, and verbosity in source and in tests.
+   Tag each finding with the principle. Typical hits are Important.
+   Propose a new abstraction only when it clearly shrinks the diff.
+   - **DRY:** a copied block of 5+ lines, or a literal repeated in
+     3+ places — extract, or call an existing helper.
+   - **reuse:** a hand-rolled helper or loop that the standard
+     library or an existing repo utility already covers.
+   - **KISS / minimal LoC:** a wrapper that only forwards (Critical
+     if it hides a side effect); needless nesting that an early
+     return would cut; dead code, unused parameters or imports,
+     commented-out code, leftover logs; a speculative abstraction,
+     config, or flag with one caller.
+   - **orthogonality / SOLID:** a function or type that does two
+     unrelated things — split it or drop the extra work. A change
+     that reaches into a neighbor to add a one-off branch.
+   - **naming / self-documenting:** a name that needs a comment to
+     explain it, or that restates the type or module path.
+   - **comments:** a comment that restates the code — cut it. A
+     comment that lies is Critical.
+   - **human reasonability:** a condition or flag the task does not
+     justify; defensive noise that cannot fire; clever indirection.
+   - **tests:** duplicated setup, assertions on private
+     implementation details, or redundant cases that add no new
+     seam or input class.
+4. Do not flag formatter or linter style. Do not flag logic, bugs,
+   regressions, coverage holes, or secrets — those belong to the
+   reviewer.
 
 ## Report back
 
