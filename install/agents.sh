@@ -136,7 +136,7 @@ render_shared_export() {
   for skill in "$DOTFILES_DIR"/.agents/skills/my-*; do
     printf -- '- `%s`: `%s/SKILL.md`' "$(basename "$skill")" "$HOME/.agents/skills/$(basename "$skill")"
     case "$(basename "$skill")" in
-      my-build) printf ' — requires implementation, review, and enforcer subagents with specialist roles.' ;;
+      my-build) printf ' — requires explorer, implementation, review, and enforcer subagents with specialist roles.' ;;
       my-security) printf ' — requires an independent read-only security-reviewer role.' ;;
       my-review) printf ' — requires an independent read-only reviewer role.' ;;
       my-plan|my-research) printf ' — requires an independent read-only explorer role.' ;;

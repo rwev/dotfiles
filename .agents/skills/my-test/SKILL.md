@@ -7,24 +7,16 @@ description: >-
   tests pass", "verify this works").
 ---
 
-Run the tests relevant to the current change.
+Run the tests relevant to the current change directly.
 
-1. Detect the test setup from the project (e.g. package.json scripts,
-   pyproject/pytest, cargo, go, Makefile). Don't assume — check what this
-   repo actually uses. If the repo has more than one suite, run the ones
-   relevant to what changed. Parallelize only when inputs and mutable
-   resources are safe or isolated; otherwise run serially. Follow
-   [Scheduling](~/.agents/references/orchestration.md#scheduling). Standalone test
-   runs need no build run artifacts.
-2. If the user named a specific test or path, focus there. Otherwise run the
-   tests covering the files changed in the working tree; fall back to the
-   full suite if scoping is unclear. A full-suite run can produce a lot of
-   output. Use a native subagent when available to return a distilled
-   pass/fail summary and failure excerpts. Otherwise run it directly and
-   summarize the result in conversation.
-3. Report pass/fail concisely. For failures, show the relevant output and
-   pinpoint the likely cause (`file:line`). If a failure looks flaky —
-   unrelated to the change, intermittent, timing-dependent — rerun it once
-   before reporting it as real.
-4. Do not "fix" failures by weakening or skipping tests. If a fix is needed,
-   explain it first and wait unless I've asked you to fix.
+1. Detect the test setup from the project (e.g. `package.json`, `pyproject`,
+   `cargo`, `go`, `Makefile`). Parallelize independent suites only when
+   mutable inputs and resources are isolated per
+   [Scheduling](~/.agents/references/orchestration.md#scheduling); otherwise
+   run serially.
+2. Focus on a named test/path, else tests covering changed working-tree
+   files, falling back to the full suite if scoping is unclear.
+3. Report pass/fail concisely with failure excerpts and likely `file:line`
+   cause. Rerun an apparently flaky failure once before calling it real.
+4. Never weaken or skip tests to pass. Explain needed fixes and wait unless
+   asked to fix.

@@ -8,19 +8,21 @@ description: >-
   my-review. my-build already runs the enforcer for clean-code checks.
 ---
 
-Review only the changes in the current working tree (`git diff` and staged) and
-tidy them up — behavior must stay identical.
+Clean up only the working-tree diff (`git diff` plus staged) without
+changing behavior.
 
-Look for and fix:
-- Dead or unreachable code, commented-out blocks, leftover debug prints/logs.
-- Stray TODOs or notes that were meant to be temporary.
-- Remove comments that restate the code, narrate the next line, repeat the name or signature, draw a banner or section line, or record who changed the code or why the change was made.
-- Keep a comment that explains a non-obvious "why".
-- Shorten a kept comment to one sentence. Keep a second sentence only when it states a constraint the code cannot show, such as a unit, an order, a lifetime, or a rejected alternative.
-- Inconsistent naming or formatting versus the surrounding code.
-- Obvious small duplications that a local helper would remove.
-
-Do NOT refactor unrelated code, change public APIs, or alter logic. Run the
-formatter/linter if the project has one. If tests exist, run them (or use
-my-test) before and after — don't just assert behavior is unchanged, confirm
-it. When done, summarize what you changed.
+1. Inspect the working-tree diff. Run the project's formatter/linter and
+   tests (via `my-test`) to establish a clean baseline.
+2. When `_my-enforcer` is available, dispatch fresh `_my-enforcer` lane(s)
+   per [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out)
+   (split by disjoint file clusters when broad). Supply the frozen diff
+   and note there are no prior reviewer findings.
+3. Apply Important and Minor shrink findings without changing logic or
+   public APIs — apply small cuts yourself, or dispatch `_my-implementer`
+   on disjoint file sets under
+   [Scheduling](~/.agents/references/orchestration.md#scheduling) (mark the
+   brief non-behavioral: preserve behavior, add no new test seams).
+4. If subagents or `_my-enforcer` are unavailable, apply the code and prose
+   rules in `~/.agents/AGENTS.md` to the diff directly.
+5. Re-run the formatter/linter and tests to confirm behavior is unchanged,
+   then summarize what changed.

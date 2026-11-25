@@ -14,49 +14,37 @@ compatibility: Requires native subagents and the _my-explorer role.
 
 Task: the thing the user just asked about.
 
-Before scoping, check native subagent support and the `_my-explorer` role.
-If either is unavailable, report
+Before scoping, check native subagent support and `_my-explorer`. If either
+is missing, report
 `Unsupported: my-plan requires native subagents and its explorer role` and
-stop. Do not substitute inline exploration for the required subagent.
+stop. Do not substitute inline exploration.
 
 Do not edit files or write code. Follow
 [orchestration](~/.agents/references/orchestration.md).
 
-1. Dispatch one `_my-explorer` per distinct, useful question, each with a
-   narrow scope. Follow
-   [Scheduling](~/.agents/references/orchestration.md#scheduling) for distinct
-   questions and stable evidence; do not repeat an investigation. After an
-   interruption, resume the same explorer under
-   [Recovery](~/.agents/references/orchestration.md#recovery).
-   Give each explorer the full task context and its scope. Have it report
-   how the code works today: real `file:line` locations and patterns to reuse.
-   Keep raw search noise out of your context; work from its distilled report.
-2. Enumerate every open decision the task leaves unresolved — including ones
-   never raised. Hunt across each category:
+1. Dispatch `_my-explorer` lanes in parallel per
+   [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out)
+   with full task context and non-overlapping scopes (for example: target
+   code and patterns, callers and integration boundaries, existing tests and
+   seams, external docs). Merge findings before deciding.
+2. Enumerate every open decision across:
    - **Technical** — approach, libraries, patterns, data model/API shape.
    - **Behavioral** — edge cases, defaults, error handling, invalid input.
-   - **Scope** — what is in vs. out; adjacent work that must not be touched.
-   - **Consequence** — hard-to-reverse or high blast-radius choices
-     (schema/API changes, deleted data, breaking changes, security/perf).
-3. Triage each decision: **if this is wrong, how hard is rework later?**
-   Score importance and rework cost.
+   - **Scope** — in vs. out; adjacent work that must not be touched.
+   - **Consequence** — hard-to-reverse or high blast-radius choices.
+3. Triage each decision by importance and rework cost:
    - **High importance + high rework cost** → must ask.
-   - **Low on either axis** → decide yourself. Note the choice and a
-     one-line reason. Do not ask just to be thorough.
-   When unsure which bucket applies, ask.
-4. For each decision that cleared the bar, have a recommended answer ready
-   with a one-line reason, plus realistic alternatives and trade-offs.
-5. Use the native question tool when available. Batch questions within its
-   limits and list your recommendation first. Otherwise ask in conversation.
-   Wait for answers before proceeding. If an answer reveals another
-   high-bar decision, ask that too.
-6. Separately, call out risks that need no decision but should be known
-   before work starts (perf cliffs, migration pain, security exposure).
-7. Once every decision is resolved, write a `## Plan` block in the
-   conversation for `my-build`: files that would change, decisions made
+   - **Low on either axis** → decide yourself with a one-line reason.
+   When unsure, ask.
+4. For each question to ask, prepare a recommended answer with a one-line
+   reason, plus realistic alternatives and trade-offs.
+5. Batch questions in the native question tool (recommendation first), else
+   in conversation, and wait for answers. Ask any follow-on high-bar
+   decisions revealed by an answer.
+6. Call out consequential risks that need no decision (perf, migration,
+   security).
+7. Emit a `## Plan` block for `my-build`: files to change, decisions made
    (asked and autonomous) with reasons, ordered tasks with owned paths,
-   blockers for each task, test seams (public boundaries to test at), and
-   key `file:line` findings.
+   blockers, test seams, and key `file:line` findings.
 
-Keep it concrete. If the task is trivial once explored, say so and skip
-ceremony rather than manufacturing decisions.
+Skip ceremony for trivial tasks once explored.

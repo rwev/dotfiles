@@ -14,36 +14,25 @@ compatibility: Requires native subagents and the _my-explorer role.
 
 Question: the thing the user just asked about.
 
-Before research, check native subagent support and the `_my-explorer` role.
-If either is unavailable, report
+Before research, check native subagent support and `_my-explorer`. If
+either is missing, report
 `Unsupported: my-research requires native subagents and its explorer role`
-and stop. Do not substitute inline research for the required subagent.
+and stop. Do not substitute inline research.
 
 Do not edit files or write code. Follow
 [orchestration](~/.agents/references/orchestration.md).
 
-1. Restate the question in one sentence. When two readings would send the
-   investigation different ways, ask once which reading to follow.
-2. Brainstorm before you dispatch. List the distinct sub-questions and the
-   possibilities worth checking. A possibility is a competing explanation,
-   an approach, or an option. Send one `_my-explorer` per distinct
-   question. Use one explorer when the question has one evidence target.
-   Use fewer when fewer questions cover the topic. Use at most six, and
-   merge related questions to stay inside that limit. Start them together
-   so they run at the same time. Follow
-   [Scheduling](~/.agents/references/orchestration.md#scheduling) for
-   distinct questions and stable evidence; do not repeat an investigation.
-   After an interruption, resume the same explorer under
-   [Recovery](~/.agents/references/orchestration.md#recovery).
-3. Give each explorer the full question and its narrow scope, including
-   where to look: this codebase, the web, or both. You brainstorm. The
-   explorer only checks its scope and reports evidence. Keep raw search
-   noise out of your context. Work from its distilled report.
-4. On `NEEDS_CONTEXT`, answer what you can, then resume that explorer. Ask
-   the user only when you cannot answer.
-5. Judge each possibility from the reports. Supported means the evidence
-   agrees with it. Ruled out means the evidence contradicts it. Open means
-   the evidence does not decide it. An idea you did not check stays open.
+1. Restate the question in one sentence. Ask once if two readings diverge.
+2. Brainstorm distinct sub-questions and competing possibilities, then
+   dispatch `_my-explorer` lanes per
+   [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out).
+   Give each lane the full question, its single scope, and where to look
+   (codebase, web, or both).
+3. On `NEEDS_CONTEXT`, answer what you can and resume that explorer; ask
+   the user only when blocked.
+4. Judge each possibility from merged evidence: `supported` (evidence
+   agrees), `ruled out` (evidence contradicts), or `open` (undecided or
+   unchecked).
 
 Write this block in the conversation:
 
@@ -63,6 +52,5 @@ Write this block in the conversation:
 <unresolved questions, or "none">
 ```
 
-Omit the Possibilities table when the question has no real alternatives.
-Stop after the answer. Start `my-plan` only when the user asks to scope
-the work.
+Omit the Possibilities table when there are no real alternatives. Stop
+after the answer; start `my-plan` only if asked.

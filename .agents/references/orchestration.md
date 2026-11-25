@@ -45,15 +45,34 @@ Use these rules from `my-plan`, `my-build`, and related skills.
   settings automatically. Subagents must not stage, commit, checkout, branch,
   reset, or stash.
 - Scope task diffs to owned product paths and supplied context, not peer work.
-- Parallel read-only agents need distinct questions or targets and stable
-  evidence. They may read common immutable sources. Do not repeat an
-  investigation.
 - Tests can write resources. Parallel focused tests need safe inputs and
   resources, or isolation. The coordinator runs broad or shared checks
   serially after joining. Run required verification once per stable batch.
   Do not skip checks.
 - Approve tests, review, and enforcement before you unlock dependents. Apply the same claims
   and gates to fixes. Never overlap a review or enforcement with writers on its evidence.
+
+## Parallel fan-out
+
+- Only the coordinator spawns subagents. Subagents never invoke `my-*` skills
+  or spawn nested agents.
+- Cap parallel agents at 5 across all skills. Spawn fewer when scope or
+  assessed effort is small; use one lane or stay inline when splitting adds
+  no value.
+- Split into non-overlapping lanes: distinct questions, hypotheses, file
+  clusters (pair source with its tests), or audit categories. Start lanes
+  together and do not repeat an investigation.
+- Give each lane the overall goal, full target list, and its narrow scope.
+  When a role lacks a shell (such as Grok reviewers, enforcers, and security
+  reviewers), pass its scoped diff and test output inline.
+- Read-only roles (`_my-explorer`, `_my-reviewer`, `_my-enforcer`,
+  `_my-security-reviewer`) may share common immutable sources over stable
+  evidence. Parallel `_my-implementer` writers must follow `## Scheduling`
+  for disjoint paths and resources.
+- Merge lane outputs in the coordinator: deduplicate by `file:line` and
+  issue, check cross-boundary interfaces across clusters, resolve or flag
+  contradictions, and take the strictest verdict (`Needs fixes` /
+  `Needs shrinks` / `Do not ship` / `Needs context`).
 
 ## Recovery
 
