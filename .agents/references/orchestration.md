@@ -57,22 +57,32 @@ Use these rules from `my-plan`, `my-build`, and related skills.
 - Only the coordinator spawns subagents. Subagents never invoke `my-*` skills
   or spawn nested agents.
 - Cap parallel agents at 5 across all skills. Spawn fewer when scope or
-  assessed effort is small; use one lane or stay inline when splitting adds
-  no value.
+  assessed effort is small. Use one lane when a split adds no value. Stay
+  inline only when that skill says the role is optional. A skill that stops
+  as unsupported still stops.
 - Split into non-overlapping lanes: distinct questions, hypotheses, file
   clusters (pair source with its tests), or audit categories. Start lanes
   together and do not repeat an investigation.
-- Give each lane the overall goal, full target list, and its narrow scope.
-  When a role lacks a shell (such as Grok reviewers, enforcers, and security
-  reviewers), pass its scoped diff and test output inline.
+- Give each lane the overall goal, full target list, its narrow scope, and
+  the global constraints.
+- For `_my-reviewer`, `_my-enforcer`, and `_my-security-reviewer`, include
+  task requirements, global constraints, the task baseline, the full scoped
+  diff, and test results. Include reviewer findings for the enforcer. A
+  commit range may label the diff. It does not replace the diff or the test
+  output.
+- On `NEEDS_CONTEXT` or `Verdict: Needs context`, and after an interruption,
+  resume that same lane under [Recovery](#recovery).
 - Read-only roles (`_my-explorer`, `_my-reviewer`, `_my-enforcer`,
   `_my-security-reviewer`) may share common immutable sources over stable
   evidence. Parallel `_my-implementer` writers must follow `## Scheduling`
   for disjoint paths and resources.
-- Merge lane outputs in the coordinator: deduplicate by `file:line` and
-  issue, check cross-boundary interfaces across clusters, resolve or flag
-  contradictions, and take the strictest verdict (`Needs fixes` /
-  `Needs shrinks` / `Do not ship` / `Needs context`).
+- Merge inside one role. Resume any context lane first. Deduplicate by
+  `file:line` and issue, check cross-boundary interfaces across clusters,
+  and resolve or flag contradictions. Take the strictest verdict on that
+  role's scale: reviewer `Approved`, then `Needs fixes`; enforcer
+  `Approved`, then `Needs shrinks`; security `Ship as-is`, then `Ship with
+  fixes`, then `Do not ship`. If the resumed lane still lacks context, the
+  wave verdict is `Needs context`.
 
 ## Recovery
 

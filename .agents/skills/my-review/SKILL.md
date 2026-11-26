@@ -23,11 +23,11 @@ with no inherited chat history. Require a read-only review (prompt rules
 do not replace harness sandboxing).
 
 1. Split broad diffs by cohesive module cluster (pair each changed file
-   with its tests) and add a cross-boundary lane when clusters share
-   changed interfaces.
-2. Give each lane task requirements, constraints, overall file list, what
-   changed and why, and its scoped target.
-3. Merge findings per `Parallel fan-out` (resume on `Needs context` per
+   with its tests).
+2. Give each lane the shell-less brief from `Parallel fan-out`, plus what
+   changed and why and the overall file list.
+3. Merge findings per `Parallel fan-out`. Check interfaces that cross
+   clusters during that merge (resume on `Needs context` per
    [Recovery](~/.agents/references/orchestration.md#recovery), else relay).
 4. Relay findings (`file:line`, description, severity) and final verdict.
    Wait for explicit go-ahead before editing anything.

@@ -46,10 +46,12 @@ write run files.
      that reaches into a neighbor to add a one-off branch.
    - **naming / self-documenting:** a name that needs a comment to
      explain it, or that restates the type or module path.
-   - **comments:** cut comments that restate, narrate, repeat
-     signatures, draw banners, or record who/why. Keep only non-obvious
-     "why" comments (one sentence, or two only for an unseen constraint).
-     A lying comment is Critical.
+   - **comments:** cut a comment that restates the code, narrates the
+     next line, repeats a name or signature, or draws a banner. Cut a
+     comment that records who changed the code or why the edit was made.
+     Keep a comment that states a non-obvious constraint the code cannot
+     show. One sentence, or two only for a unit, an order, a lifetime, or
+     a rejected alternative. A lying comment is Critical.
    - **human reasonability:** a condition or flag the task does not
      justify; defensive noise that cannot fire; clever indirection.
    - **tests:** duplicated setup, assertions on private

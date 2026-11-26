@@ -23,14 +23,12 @@ Dispatch fresh `_my-security-reviewer` lane(s) per
 with no inherited chat history. Require a read-only audit (prompt rules do
 not replace harness sandboxing).
 
-1. Split broad audits either by component cluster (plus a cross-boundary
-   auth and dataflow lane) or by category bundle (auth/IDOR;
-   input/injection/output; secrets/crypto/deps/config).
-2. Give each lane what changed and why, overall file list, and its scoped
-   target.
-3. Merge findings, verify cross-boundary auth/dataflow coverage, and take
-   the strictest verdict per `Parallel fan-out` (resume on `Needs context`
-   per [Recovery](~/.agents/references/orchestration.md#recovery), else
-   relay).
+1. Split a broad audit one way: by component cluster, or by category
+   bundle (auth/IDOR; input/injection/output; secrets/crypto/deps/config).
+2. Give each lane the shell-less brief from `Parallel fan-out`, plus what
+   changed and why and the overall file list.
+3. Merge findings per `Parallel fan-out`. Check auth and dataflow across
+   clusters during that merge (resume on `Needs context` per
+   [Recovery](~/.agents/references/orchestration.md#recovery), else relay).
 4. Relay findings (`file:line`, exploit scenario, severity) and verdict.
    Wait for explicit go-ahead before fixing anything.

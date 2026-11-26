@@ -58,13 +58,18 @@ Give each fresh subagent a self-contained brief (never inherit chat history):
 - `_my-implementer`: task requirements, agreed seams, global constraints,
   approval status, relevant findings, owned paths, resource limits, and
   notice that peers exist.
-- `_my-reviewer`: the same task context, seams, and baseline/pre-existing
-  changes, plus `base..head` or scoped working diff/test output.
-- `_my-enforcer`: task context, owned paths, `Files:`, frozen diff, and
-  reviewer findings.
+- `_my-reviewer`: task requirements, global constraints, agreed seams, the
+  task baseline, pre-existing changes to ignore, the full scoped diff, and
+  test results. A `base..head` range may label the diff. It does not
+  replace the diff or the test output.
+- `_my-enforcer`: task requirements, global constraints, the task baseline,
+  owned paths, `Files:`, the full frozen diff, test results, and reviewer
+  findings. A commit range may label the diff. It does not replace the
+  diff or the test output.
 
 ## Rules
 
 - Right-size tasks; one small deliverable may stay one task.
+- Hold global constraints yourself. Paste them into every dispatch.
 - Keep going between tasks until all finish or one blocks.
 - Track each implementer's `Files:` for commits and review scope.

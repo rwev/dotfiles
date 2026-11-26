@@ -15,14 +15,13 @@ changing behavior.
    tests (via `my-test`) to establish a clean baseline.
 2. When `_my-enforcer` is available, dispatch fresh `_my-enforcer` lane(s)
    per [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out)
-   (split by disjoint file clusters when broad). Supply the frozen diff
-   and note there are no prior reviewer findings.
-3. Apply Important and Minor shrink findings without changing logic or
-   public APIs — apply small cuts yourself, or dispatch `_my-implementer`
-   on disjoint file sets under
-   [Scheduling](~/.agents/references/orchestration.md#scheduling) (mark the
-   brief non-behavioral: preserve behavior, add no new test seams).
+   (split by disjoint file clusters when broad). Pass the shell-less brief,
+   including the full frozen diff and test results. Note that there are no
+   prior reviewer findings.
+3. Apply Important and Minor shrink findings yourself, without changing
+   logic or public APIs. For each Critical finding, repeat the finding and
+   its smaller version, and wait before applying that hunk.
 4. If subagents or `_my-enforcer` are unavailable, apply the code and prose
    rules in `~/.agents/AGENTS.md` to the diff directly.
 5. Re-run the formatter/linter and tests to confirm behavior is unchanged,
-   then summarize what changed.
+   then summarize what changed, including every unapplied Critical finding.
