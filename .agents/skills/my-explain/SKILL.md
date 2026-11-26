@@ -10,14 +10,16 @@ description: >-
 
 Explain the file, symbol, or concept the user named.
 
-Give a high-level explanation aimed at someone new to this code:
-
-1. **What it is / does** — the purpose in one or two sentences.
-2. **How it fits** — where it sits in the larger flow and what calls or depends on it.
-3. **Key pieces** — the important functions, types, or steps, and what each is responsible for.
-4. **Gotchas** — anything non-obvious, surprising, or easy to get wrong.
-
-Read the relevant code before answering, including its tests if any exist —
-they often show intended behavior more clearly than the implementation does.
-Prefer concrete references (`file:line`) over generalities. Keep it tight —
-clarity over completeness.
+1. For cross-cutting topics spanning multiple modules when `_my-explorer`
+   is available, dispatch lanes per
+   [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out)
+   (keep single-file or single-symbol questions inline):
+   - Entry points and callers.
+   - Core implementation, state, and types.
+   - Tests, config, and edge-case behavior.
+2. Always include tests when reading code — they clarify intent.
+3. Synthesize a tight explanation with concrete `file:line` references:
+   - **What it is / does** — purpose in one or two sentences.
+   - **How it fits** — role in the larger flow and callers/dependents.
+   - **Key pieces** — core functions, types, or steps.
+   - **Gotchas** — non-obvious constraints or failure modes.

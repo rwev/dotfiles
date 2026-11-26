@@ -45,15 +45,49 @@ Use these rules from `my-plan`, `my-build`, and related skills.
   settings automatically. Subagents must not stage, commit, checkout, branch,
   reset, or stash.
 - Scope task diffs to owned product paths and supplied context, not peer work.
-- Parallel read-only agents need distinct questions or targets and stable
-  evidence. They may read common immutable sources. Do not repeat an
-  investigation.
 - Tests can write resources. Parallel focused tests need safe inputs and
   resources, or isolation. The coordinator runs broad or shared checks
   serially after joining. Run required verification once per stable batch.
   Do not skip checks.
 - Approve tests, review, and enforcement before you unlock dependents. Apply the same claims
   and gates to fixes. Never overlap a review or enforcement with writers on its evidence.
+
+## Parallel fan-out
+
+- Only the coordinator spawns subagents. Subagents never invoke `my-*` skills
+  or spawn nested agents.
+- Cap parallel agents at 5 across all skills. Spawn fewer when scope or
+  assessed effort is small. Use one lane when a split adds no value. Stay
+  inline only when that skill says the role is optional. A skill that stops
+  as unsupported still stops.
+- Split into non-overlapping lanes: distinct questions, hypotheses, file
+  clusters (pair source with its tests), or audit categories. Start lanes
+  together and do not repeat an investigation.
+- Give each lane the overall goal, full target list, its narrow scope, and
+  the global constraints. The brief is the whole context. Do not pass the
+  parent chat.
+- For `_my-reviewer`, `_my-enforcer`, and `_my-security-reviewer`, include
+  task requirements, global constraints, the task baseline, and test results.
+  The full scoped diff includes untracked product files. For the reviewer,
+  also include agreed seams and pre-existing changes to ignore. For the
+  enforcer, also include owned paths, `Files:`, and reviewer findings. A
+  commit range may label the diff. It does not replace the diff or the test
+  output.
+- On `NEEDS_CONTEXT` or `Verdict: Needs context`, supply the missing context,
+  then resume that same lane under [Recovery](#recovery). After an
+  interruption, resume that same lane under Recovery too.
+- Read-only roles (`_my-explorer`, `_my-reviewer`, `_my-enforcer`,
+  `_my-security-reviewer`) may share common immutable sources over stable
+  evidence. Prompt rules do not replace the harness sandbox. Parallel
+  `_my-implementer` writers must follow `## Scheduling` for disjoint paths
+  and resources.
+- Merge inside one role. Resume any context lane first. Deduplicate by
+  `file:line` and issue, check cross-boundary interfaces across clusters,
+  and resolve or flag contradictions. Take the strictest verdict on that
+  role's scale: reviewer `Approved`, then `Needs fixes`; enforcer
+  `Approved`, then `Needs shrinks`; security `Ship as-is`, then `Ship with
+  fixes`, then `Do not ship`. If the resumed lane still lacks context, the
+  wave verdict is `Needs context`.
 
 ## Recovery
 

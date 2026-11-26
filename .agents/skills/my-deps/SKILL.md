@@ -7,16 +7,17 @@ description: >-
   "why do we have X", "what uses this package", "can we remove X").
 ---
 
-Investigate the dependency the user named.
+Investigate the dependency the user named. Do not remove or change anything
+unless asked.
 
-1. Confirm where it's declared (manifest/lockfile) and what version/range. In a
-   monorepo/workspace, check which package actually declares it — don't assume
-   it's the root's.
-2. Find where it's actually used in the codebase (imports/usages), with `file:line` refs.
-3. Explain what it provides and why the project needs it.
-4. Assess: is it a direct dependency or transitive? Actively used or dead weight? Is
-   there a lighter/std-library alternative, or would removing it break something?
-   Note if the installed version has known security advisories against it.
-
-Be factual and cite real usages. If it looks unused or replaceable, say so, but don't
-remove or change anything unless I ask.
+1. When `_my-explorer` is available, dispatch lanes per
+   [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out)
+   (run inline if narrow or unavailable):
+   - **Codebase lane(s):** manifest/lockfile declaration and version range
+     across workspace packages (do not assume root), `file:line` usages,
+     direct vs. transitive status, and stdlib/repo alternatives.
+   - **Upstream lane:** what the package provides, maintenance status,
+     lighter alternatives, and known security advisories for the declared
+     version.
+2. Merge findings into a factual summary citing real `file:line` usages
+   and sources, noting if the package appears unused or replaceable.

@@ -12,32 +12,26 @@ description: >-
 
 Bug/failure: the thing the user just asked about.
 
-No fix without a confirmed root cause. A fix without one is a guess — don't
-offer it. Before any hypothesis, name one tight command, run it, and show
-that it fails on this exact symptom. Do not form a theory without that
-result.
+No fix or theory without a confirmed failure. First name one tight
+command, run it, and show it fails on this exact symptom.
 
-1. Reproduce the failure reliably. If it's intermittent, note the
-   reproduction rate honestly rather than claiming a clean repro; if you
-   can't reproduce it at all, say so and report what you'd need (logs,
-   exact repro steps) rather than guessing.
-2. Read the full error/stack trace/failing assertion before forming a theory
-   — don't skip past it.
-3. If this looks like a regression, check what changed recently (`git log`,
-   `git blame`, `git diff`) in the relevant area. If it isn't a regression
-   (works nowhere, or "worked on my machine"), consider environment/config
-   causes too — versions, env vars, platform differences, data-dependent
-   state — not just recent code changes.
-4. For multi-component failures, temporary diagnostic instrumentation is
-   fine — the only reason to edit code here. Add targeted logging at
-   component boundaries, narrow down the failure one hypothesis at a time.
-5. Once you can point at the exact `file:line` and mechanism, confirm the
-   cause: show that this command passes when the hypothesized cause is
-   addressed in isolation.
-6. Remove all your own instrumentation before reporting. `git diff` must come
-   back clean of it — leave the tree as you found it.
+1. Reproduce reliably and report intermittent rates honestly. If you cannot
+   reproduce, state what inputs or logs are needed and stop.
+2. Read the full error, stack trace, or failing assertion.
+3. When the cause is not obvious from the failure output, dispatch parallel
+   `_my-explorer` lanes per
+   [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out)
+   — one distinct hypothesis or angle per lane (recent regressions via
+   `git log`/`blame`/`diff`, control/data flow at failing `file:line`, or
+   env/config/data state). Pass the repro command, full error output, and
+   single hypothesis. Investigate directly if `_my-explorer` is unavailable.
+4. Merge explorer reports. For multi-component cases that still need proof,
+   add temporary diagnostic logging at boundaries yourself (never in
+   explorers), narrow down one hypothesis at a time, and remove all
+   instrumentation before reporting (`git diff` clean).
+5. Confirm the exact `file:line` and mechanism by showing the repro command
+   passes when the cause is addressed in isolation.
 
-Report: root cause (`file:line` + mechanism), the evidence that confirms it,
-and a described (not applied) fix recommendation. Diagnose only — leave
-applying the fix to me, or to `my-build` for anything non-trivial, unless
-I've explicitly asked you to fix it yourself.
+Report root cause (`file:line` + mechanism), confirming evidence, and a
+described (not applied) fix recommendation. Leave applying the fix to the
+user or `my-build`.
