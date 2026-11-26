@@ -208,10 +208,11 @@ does not create duplicate Grok skill links.
 | Source                                  | Purpose                                                        |
 | --------------------------------------- | -------------------------------------------------------------- |
 | `.agents/AGENTS.md`                     | Concise working rules, safety defaults, and verification.      |
-| `.agents/skills/my-*/SKILL.md`          | Fourteen portable workflows.                                   |
+| `.agents/skills/my-*/SKILL.md`          | Fifteen portable workflows.                                    |
 | `.agents/personas/my-humble-servant.md` | Plain Markdown persona body.                                   |
 | `.agents/agents/_my-*.md`               | Five shared specialist instruction bodies.                     |
 | `.agents/references/orchestration.md`   | Shared scheduling, build-loop, and recovery rules.             |
+| `.agents/references/terms.md`           | Glossary tokens, caps, file schemas, and anchor rules.         |
 | `.claude/templates/`                    | Native role and output-style metadata, outside discovery.      |
 | `.opencode/templates/agents/`           | Native role metadata, outside discovery.                       |
 | `.copilot/agents/`                      | Native Copilot role metadata.                                  |
@@ -278,6 +279,7 @@ and makes no network requests. See
 | `my-commit`              | Stage and commit with a concise message.         |
 | `my-debug`               | Diagnose a failure without applying a fix.       |
 | `my-deps`                | Explain a dependency and its uses.               |
+| `my-edit-docs`           | Edit agent docs by section, then run the lint.   |
 | `my-explain`             | Explain code or a concept.                       |
 | `my-plan`                | Explore and scope work before coding.            |
 | `my-pr`                  | Prepare and open a pull request with approval.   |
@@ -403,7 +405,9 @@ python3 -m unittest discover -s tests -v
 
 The suite covers clean installs, repeat runs, target selection, custom homes,
 dry runs, local overrides, migration, backups, invalid JSON, and untouched
-runtime files. It also checks generated profiles and skill metadata. When
+runtime files. It also checks generated profiles and skill metadata.
+`tests/test_docs.py` lints the agent docs against `terms.md`: schemas,
+tokens, anchors, links, and skill-agent duplication. When
 `grok` is on `PATH`, it checks native discovery in isolated homes outside this
 repository. The check sends no model requests. Script tests use an isolated
 PATH and send no network requests.
@@ -445,7 +449,7 @@ dotfiles/
 ├── .opencode/          # Native settings and metadata templates
 ├── .copilot/agents/    # Native specialist metadata
 ├── .grok/              # Native defaults, statusline, and templates
-└── tests/              # Isolated installer checks
+└── tests/              # Isolated installer checks and doc lint
 ```
 
 ## Updating plugins
