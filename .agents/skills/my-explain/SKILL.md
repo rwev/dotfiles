@@ -10,6 +10,8 @@ description: >-
 
 Explain the file, symbol, or concept the user named.
 
+## Process
+
 1. For cross-cutting topics spanning multiple modules when `_my-explorer`
    is available, dispatch lanes per
    [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out)

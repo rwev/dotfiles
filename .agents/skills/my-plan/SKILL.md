@@ -22,6 +22,8 @@ stop. Do not substitute inline exploration.
 Do not edit files or write code. Follow
 [orchestration](~/.agents/references/orchestration.md).
 
+## Process
+
 1. Dispatch `_my-explorer` lanes in parallel per
    [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out)
    with full task context and non-overlapping scopes (for example: target
@@ -46,5 +48,7 @@ Do not edit files or write code. Follow
 7. Emit a `## Plan` block for `my-build`: files to change, decisions made
    (asked and autonomous) with reasons, ordered tasks with owned paths,
    blockers, test seams, and key `file:line` findings.
+
+## Rules
 
 Skip ceremony for trivial tasks once explored.

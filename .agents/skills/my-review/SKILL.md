@@ -20,10 +20,14 @@ range the user named.
 Dispatch fresh `_my-reviewer` lane(s) per
 [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out).
 
+## Process
+
 1. Split broad diffs by cohesive module cluster (pair each changed file
    with its tests).
-2. Give each lane the shell-less brief from `Parallel fan-out`, plus what
-   changed and why and the overall file list.
-3. Merge findings per `Parallel fan-out`.
+2. Give each lane the
+   [review brief](~/.agents/references/orchestration.md#review-brief),
+   plus what changed and why and the overall file list.
+3. Merge findings per
+   [lane merge](~/.agents/references/orchestration.md#lane-merge).
 4. Relay findings (`file:line`, description, severity) and final verdict.
    Wait for explicit go-ahead before editing anything.

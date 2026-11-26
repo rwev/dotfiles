@@ -11,6 +11,8 @@ description: >-
 
 Review the current working-tree changes and create a git commit.
 
+## Process
+
 1. Run `git status` and `git diff` (and `git diff --staged`) to see what changed.
 2. If nothing is staged, stage the relevant changes with `git add`. Don't stage
    unrelated files, build artifacts, or secrets — scan the diff for anything
@@ -21,6 +23,8 @@ Review the current working-tree changes and create a git commit.
    summary under ~72 chars, imperative mood. Add a short body only if the "why"
    isn't obvious from the diff. If the user gave a message, use it.
 4. Commit now. The request to commit is the approval. Do not ask again.
+
+## Rules
 
 Push only when the user asked to push. Then push. Do not ask again. If the
 changes span multiple unrelated concerns, make a separate commit for each.

@@ -9,6 +9,8 @@ description: >-
 
 Prepare a pull request for the current branch.
 
+## Process
+
 1. Determine the base branch (use one the user named, else the repo's default) and
    review the full diff against it (`git diff <base>...HEAD`, `git log`). Check
    whether the base has moved since the branch diverged; flag likely conflicts
@@ -18,6 +20,8 @@ Prepare a pull request for the current branch.
    notable changes as bullets, and any testing notes or follow-ups.
 3. Show me the title and body first. Only after I confirm, push the branch if needed
    and open the PR with `gh pr create`.
+
+## Rules
 
 Never push or open the PR without my explicit confirmation, and never force-push to
 update it without asking first — even for a branch only this PR uses. Don't include

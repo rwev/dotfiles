@@ -9,6 +9,8 @@ description: >-
 
 Save the current work as a checkpoint I can return to.
 
+## Process
+
 1. Show `git status` so I can see what's in play. If the tree is clean,
    say so and stop — there's nothing to checkpoint.
 2. Create a labeled stash that includes untracked files:
@@ -16,6 +18,8 @@ Save the current work as a checkpoint I can return to.
    otherwise a short summary of what's changed.
 3. Confirm the stash was created and remind me how to restore it
    (`git stash list`, `git stash pop`).
+
+## Rules
 
 This is a safe checkpoint, not a discard — never use `git checkout`/`reset --hard` or
 otherwise throw away changes here.
