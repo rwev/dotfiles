@@ -28,8 +28,8 @@ Do not edit files or write code. Follow
    [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out).
    Give each lane the full question, its single scope, and where to look
    (codebase, web, or both).
-3. On `NEEDS_CONTEXT`, answer what you can and resume that explorer; ask
-   the user only when blocked.
+3. On `NEEDS_CONTEXT`, answer what you can. Ask the user only when you
+   cannot answer.
 4. Judge each possibility from merged evidence: `supported` (evidence
    agrees), `ruled out` (evidence contradicts), or `open` (undecided or
    unchecked).

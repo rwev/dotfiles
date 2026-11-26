@@ -19,16 +19,13 @@ Target: the named diff or area, else the working-tree diff (`git diff` plus
 staged).
 
 Dispatch fresh `_my-security-reviewer` lane(s) per
-[Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out),
-with no inherited chat history. Require a read-only audit (prompt rules do
-not replace harness sandboxing).
+[Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out).
 
 1. Split a broad audit one way: by component cluster, or by category
    bundle (auth/IDOR; input/injection/output; secrets/crypto/deps/config).
 2. Give each lane the shell-less brief from `Parallel fan-out`, plus what
    changed and why and the overall file list.
 3. Merge findings per `Parallel fan-out`. Check auth and dataflow across
-   clusters during that merge (resume on `Needs context` per
-   [Recovery](~/.agents/references/orchestration.md#recovery), else relay).
+   clusters during that merge.
 4. Relay findings (`file:line`, exploit scenario, severity) and verdict.
    Wait for explicit go-ahead before fixing anything.

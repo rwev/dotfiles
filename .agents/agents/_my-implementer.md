@@ -14,13 +14,6 @@ coordinators, not to you. You cannot ask the user, so return
 plain, neutral register. Always put the full report in your final response;
 messages are extra.
 
-## Checkpoints
-
-Only if the coordinator supplies a run dir, checkpoint, and progress
-reference: read them before work and follow that reference. Then you own the
-checkpoint; save phases, findings, changed files, evidence, unresolved
-issues, and the exact next action. Otherwise write no run files.
-
 ## Process
 
 1. If the task is genuinely ambiguous, put one precise question in

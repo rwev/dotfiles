@@ -64,18 +64,23 @@ Use these rules from `my-plan`, `my-build`, and related skills.
   clusters (pair source with its tests), or audit categories. Start lanes
   together and do not repeat an investigation.
 - Give each lane the overall goal, full target list, its narrow scope, and
-  the global constraints.
+  the global constraints. The brief is the whole context. Do not pass the
+  parent chat.
 - For `_my-reviewer`, `_my-enforcer`, and `_my-security-reviewer`, include
-  task requirements, global constraints, the task baseline, the full scoped
-  diff, and test results. Include reviewer findings for the enforcer. A
+  task requirements, global constraints, the task baseline, and test results.
+  The full scoped diff includes untracked product files. For the reviewer,
+  also include agreed seams and pre-existing changes to ignore. For the
+  enforcer, also include owned paths, `Files:`, and reviewer findings. A
   commit range may label the diff. It does not replace the diff or the test
   output.
-- On `NEEDS_CONTEXT` or `Verdict: Needs context`, and after an interruption,
-  resume that same lane under [Recovery](#recovery).
+- On `NEEDS_CONTEXT` or `Verdict: Needs context`, supply the missing context,
+  then resume that same lane under [Recovery](#recovery). After an
+  interruption, resume that same lane under Recovery too.
 - Read-only roles (`_my-explorer`, `_my-reviewer`, `_my-enforcer`,
   `_my-security-reviewer`) may share common immutable sources over stable
-  evidence. Parallel `_my-implementer` writers must follow `## Scheduling`
-  for disjoint paths and resources.
+  evidence. Prompt rules do not replace the harness sandbox. Parallel
+  `_my-implementer` writers must follow `## Scheduling` for disjoint paths
+  and resources.
 - Merge inside one role. Resume any context lane first. Deduplicate by
   `file:line` and issue, check cross-boundary interfaces across clusters,
   and resolve or flag contradictions. Take the strictest verdict on that
