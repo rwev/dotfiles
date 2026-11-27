@@ -1,11 +1,11 @@
 ---
-name: my-edit-docs
+name: my-ai-toolkit
 description: >-
-  Edit agent, skill, reference, or rule markdown by section and anchor, then
-  run the doc lint.
-  TRIGGER — invoke whenever the user wants agent instructions, skills,
-  references, or other `~/.agents` docs changed (e.g. "reword the reviewer",
-  "add a rule to my-build", "rename this verdict"). SKIP for code changes.
+  Update this repo's agent toolkit: edit instructions, skills, references,
+  or rules by section and anchor, then run the doc lint.
+  TRIGGER — invoke whenever the user wants the AI toolkit docs changed
+  (e.g. "reword the reviewer", "add a rule to my-build", "rename this
+  verdict"). SKIP for code changes.
 ---
 
 Edit the docs the user named. Keep the meaning unless the user asked to

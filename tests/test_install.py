@@ -76,7 +76,7 @@ class InstallerTests(unittest.TestCase):
 
     def test_clean_and_idempotent(self):
         self.install('--tools=claude,opencode,copilot')
-        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 15)
+        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 14)
         for path in ['.claude/CLAUDE.md',
                      '.config/opencode/AGENTS.md', '.copilot/copilot-instructions.md']:
             text = (self.home / path).read_text()
@@ -192,7 +192,7 @@ class InstallerTests(unittest.TestCase):
                 self.assertIn('request the missing context', body)
             shared_body = (ROOT / '.agents/agents' / (name + '.md')).read_text().split('---', 2)[2]
             self.assertTrue(body.endswith(shared_body.lstrip('\n')))
-        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 15)
+        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 14)
         self.assertFalse((grok / 'skills').exists())
         self.assertTrue((grok / 'statusline.sh').is_symlink())
         self.assertEqual((grok / 'statusline.sh').resolve(), ROOT / '.grok' / 'statusline.sh')
@@ -575,8 +575,10 @@ class InstallerTests(unittest.TestCase):
                     report = json.loads(result.stdout)
                     self.assertTrue({'_my-implementer', '_my-reviewer', '_my-enforcer', '_my-security-reviewer', '_my-explorer'} <=
                                     {agent['name'] for agent in report['agents']})
-                    self.assertTrue({p.name for p in (ROOT / '.agents/skills').iterdir()} <=
-                                    {skill['name'] for skill in report['skills']})
+                    installed = {p.name for p in (ROOT / '.agents/skills').iterdir()} - {'my-ai-toolkit'}
+                    names = {skill['name'] for skill in report['skills']}
+                    self.assertTrue(installed <= names)
+                    self.assertNotIn('my-ai-toolkit', names)
                     active = [entry for entry in report['projectInstructions'] if not entry.get('disabled')]
                     paths = [entry['path'] for entry in active]
                     grok = Path(self.env.get('GROK_HOME', self.home / '.grok'))
@@ -998,7 +1000,8 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual((self.home / '.agents/backups/skills/my-test.bak/SKILL.md').read_text(),
                          'custom same-name skill')
         self.assertTrue(own_skill.is_symlink())
-        self.assertEqual(len(list((self.home / '.agents/skills').glob('my-*'))), 15)
+        self.assertEqual(len(list((self.home / '.agents/skills').glob('my-*'))), 14)
+        self.assertFalse((self.home / '.agents/skills/my-ai-toolkit').exists())
         self.assertFalse(any(p.name.endswith('.bak') for p in (self.home / '.agents/skills').iterdir()))
 
     def test_dry_run_legacy_directory_migration(self):
@@ -1013,6 +1016,28 @@ class InstallerTests(unittest.TestCase):
         self.install('--dry-run', '--tools=claude,opencode,copilot')
         self.assertEqual(before, self.snapshot())
 
+    def test_repo_only_skill_is_not_installed(self):
+        source = ROOT / '.agents/skills/my-ai-toolkit'
+        links = [self.home / '.agents/skills/my-ai-toolkit',
+                 self.home / '.claude/skills/my-ai-toolkit']
+        for dest in links:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.symlink_to(source)
+        self.install('--tools=claude')
+        for dest in links:
+            self.assertFalse(dest.exists())
+            self.assertFalse(dest.is_symlink())
+        self.assertTrue((source / 'SKILL.md').is_file())
+        export = (self.home / '.agents/exports/default.md').read_text()
+        self.assertNotIn('my-ai-toolkit', export)
+        self.assertIn('`my-commit`', export)
+        elsewhere = self.home / 'elsewhere'
+        elsewhere.mkdir()
+        links[0].symlink_to(elsewhere)
+        self.install('--tools=claude')
+        self.assertTrue(links[0].is_symlink())
+        self.assertEqual(os.readlink(links[0]), str(elsewhere))
+
     def test_conflicting_claude_skill_link_backup_not_discovered(self):
         outside = self.home / 'outside'
         outside.mkdir()
@@ -1026,10 +1051,10 @@ class InstallerTests(unittest.TestCase):
         self.assertTrue(backup.is_symlink())
         self.assertEqual((backup / 'SKILL.md').read_text(), 'custom same-name skill')
         self.assertEqual((outside / 'SKILL.md').read_text(), 'custom same-name skill')
+        installed = {p.name for p in (ROOT / '.agents/skills').iterdir()} - {'my-ai-toolkit'}
         for root in [directory, self.home / '.agents/skills']:
-            self.assertEqual(len(list(root.iterdir())), 15)
-            self.assertEqual({p.name for p in root.iterdir()},
-                             {p.name for p in (ROOT / '.agents/skills').iterdir()})
+            self.assertEqual(len(list(root.iterdir())), 14)
+            self.assertEqual({p.name for p in root.iterdir()}, installed)
 
     def test_zshrc_module_only(self):
         result = subprocess.run(['bash', str(self.root / 'install.sh'), '--zshrc'],

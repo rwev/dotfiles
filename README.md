@@ -208,7 +208,7 @@ does not create duplicate Grok skill links.
 | Source                                  | Purpose                                                        |
 | --------------------------------------- | -------------------------------------------------------------- |
 | `.agents/AGENTS.md`                     | Concise working rules, safety defaults, and verification.      |
-| `.agents/skills/my-*/SKILL.md`          | Fifteen portable workflows.                                    |
+| `.agents/skills/my-*/SKILL.md`          | Fourteen installed workflows. `my-ai-toolkit` is repo-only.    |
 | `.agents/personas/my-humble-servant.md` | Plain Markdown persona body.                                   |
 | `.agents/agents/_my-*.md`               | Five shared specialist instruction bodies.                     |
 | `.agents/references/orchestration.md`   | Shared scheduling, build-loop, and recovery rules.             |
@@ -279,7 +279,6 @@ and makes no network requests. See
 | `my-commit`              | Stage and commit with a concise message.         |
 | `my-debug`               | Diagnose a failure without applying a fix.       |
 | `my-deps`                | Explain a dependency and its uses.               |
-| `my-edit-docs`           | Edit agent docs by section, then run the lint.   |
 | `my-explain`             | Explain code or a concept.                       |
 | `my-plan`                | Explore and scope work before coding.            |
 | `my-pr`                  | Prepare and open a pull request with approval.   |
@@ -292,6 +291,10 @@ and makes no network requests. See
 
 Use native invocation syntax: `/my-commit` in Claude, or ask the CLI to use
 the named skill. Syntax depends on the harness.
+
+`my-ai-toolkit` stays at `.agents/skills/my-ai-toolkit` in this repo. The
+installer does not link it into `$HOME`. Use it from this checkout to edit
+the agent docs.
 
 The Claude, OpenCode, Copilot, and Grok adapters install
 `_my-implementer`, `_my-reviewer`, `_my-enforcer`,
