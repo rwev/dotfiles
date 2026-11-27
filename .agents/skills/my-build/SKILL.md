@@ -19,7 +19,7 @@ delegation with sequential inline work or self-review.
 
 Follow [orchestration](~/.agents/references/orchestration.md).
 
-## Phase checklist
+## Process
 
 1. **Plan** — Use the `## Plan` block from `my-plan` if present. Otherwise
    dispatch `_my-explorer` lanes per
@@ -39,14 +39,14 @@ Follow [orchestration](~/.agents/references/orchestration.md).
    when broad).
 6. **Hand off** — Point me at `my-pr`. Do not open the PR yourself.
 
-## Dispatch payloads
+## Dispatch
 
 - `_my-explorer`: task text, global constraints, and its scoped question.
 - `_my-implementer`: task requirements, agreed seams, global constraints,
   approval status, relevant findings, owned paths, resource limits, and
   notice that peers exist.
-- `_my-reviewer` and `_my-enforcer`: pass the shell-less brief from
-  [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out).
+- `_my-reviewer` and `_my-enforcer`: pass the
+  [review brief](~/.agents/references/orchestration.md#review-brief).
 
 ## Rules
 

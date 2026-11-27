@@ -22,6 +22,8 @@ and stop. Do not substitute inline research.
 Do not edit files or write code. Follow
 [orchestration](~/.agents/references/orchestration.md).
 
+## Process
+
 1. Restate the question in one sentence. Ask once if two readings diverge.
 2. Brainstorm distinct sub-questions and competing possibilities, then
    dispatch `_my-explorer` lanes per
@@ -33,6 +35,8 @@ Do not edit files or write code. Follow
 4. Judge each possibility from merged evidence: `supported` (evidence
    agrees), `ruled out` (evidence contradicts), or `open` (undecided or
    unchecked).
+
+## Report back
 
 Write this block in the conversation:
 

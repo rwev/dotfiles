@@ -9,6 +9,8 @@ description: >-
 
 Run the tests relevant to the current change directly.
 
+## Process
+
 1. Detect the test setup from the project (e.g. `package.json`, `pyproject`,
    `cargo`, `go`, `Makefile`). Parallelize independent suites only when
    mutable inputs and resources are isolated per

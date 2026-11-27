@@ -10,6 +10,8 @@ description: >-
 Investigate the dependency the user named. Do not remove or change anything
 unless asked.
 
+## Process
+
 1. When `_my-explorer` is available, dispatch lanes per
    [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out)
    (run inline if narrow or unavailable):

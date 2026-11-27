@@ -15,6 +15,8 @@ Bug/failure: the thing the user just asked about.
 No fix or theory without a confirmed failure. First name one tight
 command, run it, and show it fails on this exact symptom.
 
+## Process
+
 1. Reproduce reliably and report intermittent rates honestly. If you cannot
    reproduce, state what inputs or logs are needed and stop.
 2. Read the full error, stack trace, or failing assertion.
@@ -31,6 +33,8 @@ command, run it, and show it fails on this exact symptom.
    instrumentation before reporting (`git diff` clean).
 5. Confirm the exact `file:line` and mechanism by showing the repro command
    passes when the cause is addressed in isolation.
+
+## Report back
 
 Report root cause (`file:line` + mechanism), confirming evidence, and a
 described (not applied) fix recommendation. Leave applying the fix to the

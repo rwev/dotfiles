@@ -208,10 +208,11 @@ does not create duplicate Grok skill links.
 | Source                                  | Purpose                                                        |
 | --------------------------------------- | -------------------------------------------------------------- |
 | `.agents/AGENTS.md`                     | Concise working rules, safety defaults, and verification.      |
-| `.agents/skills/my-*/SKILL.md`          | Fourteen portable workflows.                                   |
+| `.agents/skills/my-*/SKILL.md`          | Fourteen installed workflows. `my-ai-toolkit` is repo-only.    |
 | `.agents/personas/my-humble-servant.md` | Plain Markdown persona body.                                   |
 | `.agents/agents/_my-*.md`               | Five shared specialist instruction bodies.                     |
 | `.agents/references/orchestration.md`   | Shared scheduling, build-loop, and recovery rules.             |
+| `.agents/references/terms.md`           | Glossary tokens, caps, file schemas, and anchor rules.         |
 | `.claude/templates/`                    | Native role and output-style metadata, outside discovery.      |
 | `.opencode/templates/agents/`           | Native role metadata, outside discovery.                       |
 | `.copilot/agents/`                      | Native Copilot role metadata.                                  |
@@ -290,6 +291,10 @@ and makes no network requests. See
 
 Use native invocation syntax: `/my-commit` in Claude, or ask the CLI to use
 the named skill. Syntax depends on the harness.
+
+`my-ai-toolkit` stays at `.agents/skills/my-ai-toolkit` in this repo. The
+installer does not link it into `$HOME`. Use it from this checkout to edit
+the agent docs.
 
 The Claude, OpenCode, Copilot, and Grok adapters install
 `_my-implementer`, `_my-reviewer`, `_my-enforcer`,
@@ -403,7 +408,9 @@ python3 -m unittest discover -s tests -v
 
 The suite covers clean installs, repeat runs, target selection, custom homes,
 dry runs, local overrides, migration, backups, invalid JSON, and untouched
-runtime files. It also checks generated profiles and skill metadata. When
+runtime files. It also checks generated profiles and skill metadata.
+`tests/test_docs.py` lints the agent docs against `terms.md`: schemas,
+tokens, anchors, links, and skill-agent duplication. When
 `grok` is on `PATH`, it checks native discovery in isolated homes outside this
 repository. The check sends no model requests. Script tests use an isolated
 PATH and send no network requests.
@@ -445,7 +452,7 @@ dotfiles/
 ├── .opencode/          # Native settings and metadata templates
 ├── .copilot/agents/    # Native specialist metadata
 ├── .grok/              # Native defaults, statusline, and templates
-└── tests/              # Isolated installer checks
+└── tests/              # Isolated installer checks and doc lint
 ```
 
 ## Updating plugins

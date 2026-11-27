@@ -15,7 +15,7 @@ Use these rules from `my-plan`, `my-build`, and related skills.
   context, then resume the same agent.
 - Join writers and freeze review inputs before review, enforcement, or
   shared checks.
-- Send Critical/Important reviewer findings or enforcer `Needs shrinks`
+- <a id="fix-cap"></a>Send Critical/Important reviewer findings or enforcer `Needs shrinks`
   to the same implementer, then to a fresh reviewer. Enforce only after
   that reviewer Approves: dispatch a fresh enforcer on the task's
   updated frozen diff. After two failed fix attempts on the same
@@ -56,7 +56,7 @@ Use these rules from `my-plan`, `my-build`, and related skills.
 
 - Only the coordinator spawns subagents. Subagents never invoke `my-*` skills
   or spawn nested agents.
-- Cap parallel agents at 5 across all skills. Spawn fewer when scope or
+- <a id="fanout-cap"></a>Cap parallel agents at 5 across all skills. Spawn fewer when scope or
   assessed effort is small. Use one lane when a split adds no value. Stay
   inline only when that skill says the role is optional. A skill that stops
   as unsupported still stops.
@@ -66,7 +66,7 @@ Use these rules from `my-plan`, `my-build`, and related skills.
 - Give each lane the overall goal, full target list, its narrow scope, and
   the global constraints. The brief is the whole context. Do not pass the
   parent chat.
-- For `_my-reviewer`, `_my-enforcer`, and `_my-security-reviewer`, include
+- <a id="review-brief"></a>For `_my-reviewer`, `_my-enforcer`, and `_my-security-reviewer`, include
   task requirements, global constraints, the task baseline, and test results.
   The full scoped diff includes untracked product files. For the reviewer,
   also include agreed seams and pre-existing changes to ignore. For the
@@ -79,15 +79,13 @@ Use these rules from `my-plan`, `my-build`, and related skills.
 - Read-only roles (`_my-explorer`, `_my-reviewer`, `_my-enforcer`,
   `_my-security-reviewer`) may share common immutable sources over stable
   evidence. Prompt rules do not replace the harness sandbox. Parallel
-  `_my-implementer` writers must follow `## Scheduling` for disjoint paths
-  and resources.
-- Merge inside one role. Resume any context lane first. Deduplicate by
-  `file:line` and issue, check cross-boundary interfaces across clusters,
-  and resolve or flag contradictions. Take the strictest verdict on that
-  role's scale: reviewer `Approved`, then `Needs fixes`; enforcer
-  `Approved`, then `Needs shrinks`; security `Ship as-is`, then `Ship with
-  fixes`, then `Do not ship`. If the resumed lane still lacks context, the
-  wave verdict is `Needs context`.
+  `_my-implementer` writers must follow [Scheduling](#scheduling) for disjoint
+  paths and resources.
+- <a id="lane-merge"></a>Merge inside one role. Resume any context lane first.
+  Deduplicate by `file:line` and issue, check cross-boundary interfaces across
+  clusters, and resolve or flag contradictions. Take the strictest verdict on
+  that role's scale in [Verdicts](~/.agents/references/terms.md#verdicts). If
+  the resumed lane still lacks context, the wave verdict is `Needs context`.
 
 ## Recovery
 

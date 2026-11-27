@@ -129,13 +129,18 @@ render_native_agent() {
   markdown_body "$src" || return
 }
 
+# Repo tooling for this checkout. Do not link it into $HOME.
+REPO_ONLY_SKILL=my-ai-toolkit
+
 render_shared_export() {
-  local skill
+  local skill name
   render_instructions true "" || return
   printf '\n## Skills\n\nLoad each skill file explicitly if the harness has no native skill discovery.\n\n'
   for skill in "$DOTFILES_DIR"/.agents/skills/my-*; do
-    printf -- '- `%s`: `%s/SKILL.md`' "$(basename "$skill")" "$HOME/.agents/skills/$(basename "$skill")"
-    case "$(basename "$skill")" in
+    name="$(basename "$skill")"
+    [[ "$name" == "$REPO_ONLY_SKILL" ]] && continue
+    printf -- '- `%s`: `%s/SKILL.md`' "$name" "$HOME/.agents/skills/$name"
+    case "$name" in
       my-build) printf ' — requires explorer, implementation, review, and enforcer subagents with specialist roles.' ;;
       my-security) printf ' — requires an independent read-only security-reviewer role.' ;;
       my-review) printf ' — requires an independent read-only reviewer role.' ;;
@@ -145,10 +150,19 @@ render_shared_export() {
   done
 }
 
+remove_repo_only_skill_link() {
+  local dest="$1" src="$DOTFILES_DIR/.agents/skills/$REPO_ONLY_SKILL"
+  [[ -L "$dest" && "$(readlink "$dest")" == "$src" ]] || return 0
+  info "Removing $dest"
+  run rm -- "$dest"
+}
+
 link_skills() {
-  local dir="$1" skill
+  local dir="$1" skill name
   for skill in "$DOTFILES_DIR"/.agents/skills/my-*; do
-    link_file "$skill" "$dir/$(basename "$skill")"
+    name="$(basename "$skill")"
+    [[ "$name" == "$REPO_ONLY_SKILL" ]] && continue
+    link_file "$skill" "$dir/$name"
   done
 }
 
@@ -164,6 +178,8 @@ install_shared_agents() {
     link_file "$src" "$HOME/.agents/agents/$(basename "$src")"
   done
   ensure_directory "$HOME/.agents/skills"
+  remove_repo_only_skill_link "$HOME/.agents/skills/$REPO_ONLY_SKILL"
+  remove_repo_only_skill_link "$CLAUDE_DIR/skills/$REPO_ONLY_SKILL"
   link_skills "$HOME/.agents/skills"
   ensure_directory "$HOME/.agents/exports"
   if $DRY_RUN; then

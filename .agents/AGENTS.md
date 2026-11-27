@@ -12,6 +12,8 @@ override these defaults.
   native subagents.
 - Stop as unsupported when a required role or subagent is missing.
 - Do not replace independent review with self-review.
+- Use the exact role, status, verdict, and severity tokens in
+  `~/.agents/references/terms.md`.
 
 ## Working style
 

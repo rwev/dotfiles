@@ -21,11 +21,15 @@ staged).
 Dispatch fresh `_my-security-reviewer` lane(s) per
 [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out).
 
+## Process
+
 1. Split a broad audit one way: by component cluster, or by category
    bundle (auth/IDOR; input/injection/output; secrets/crypto/deps/config).
-2. Give each lane the shell-less brief from `Parallel fan-out`, plus what
-   changed and why and the overall file list.
-3. Merge findings per `Parallel fan-out`. Check auth and dataflow across
+2. Give each lane the
+   [review brief](~/.agents/references/orchestration.md#review-brief),
+   plus what changed and why and the overall file list.
+3. Merge findings per
+   [lane merge](~/.agents/references/orchestration.md#lane-merge). Check auth and dataflow across
    clusters during that merge.
 4. Relay findings (`file:line`, exploit scenario, severity) and verdict.
    Wait for explicit go-ahead before fixing anything.

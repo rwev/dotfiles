@@ -16,6 +16,8 @@ investigation, root causes, architecture, decisions, and any change set —
 into a single well-organized markdown file at the workspace root. Never
 write it under an `.agents` path.
 
+## Process
+
 1. Pick a filename: `kebab-case-topic.md` describing the subject (e.g.
    `auth-token-refresh-bug.md`). If the user gave a name or one was implied,
    use it. If a file with that name already
