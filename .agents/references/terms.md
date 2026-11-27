@@ -8,8 +8,8 @@ against the others.
 
 | Token                   | Meaning                                                    |
 | ----------------------- | ---------------------------------------------------------- |
-| coordinator             | The main agent. It spawns lanes, merges reports, commits.  |
-| lane                    | One subagent with one narrow scope in a fan-out.           |
+| `coordinator`           | The main agent. It spawns lanes, merges reports, commits.  |
+| `lane`                  | One subagent with one narrow scope in a fan-out.           |
 | `_my-explorer`          | Read-only research for one scoped question.                |
 | `_my-implementer`       | Writes one task, test first.                               |
 | `_my-reviewer`          | Read-only review of logic, regressions, and coverage.      |
