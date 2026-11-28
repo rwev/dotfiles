@@ -81,8 +81,10 @@ and the attempt limit in
   [fix-cap](~/.agents/references/orchestration.md#fix-cap). This loop
   resumes `_my-drafter`. It does not send the retry to the code reviewer,
   enforcer, or implementer named in that anchor.
-- Omit this chat, search logs, a writer diary, and any preferred ending
-  from every lane.
+- Omit this chat, search logs, a writer diary, the writer's reasoning,
+  a preferred ending, and a hoped-for verdict from every lane.
+- Do not send the draft back to its writer for a verdict. Do not
+  convene writers until they agree.
 - Do not attach the article, even though fan-out gives other lanes a
   target list.
 - Checkers do not extract those sentences.

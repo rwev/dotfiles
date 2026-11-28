@@ -34,6 +34,7 @@ full report in your final response.
 
 - Treat a hoped-for conclusion as a request, not as evidence.
 - The attached sources are the only evidence.
+- Do not review this draft. Return the document only.
 - Write beside other drafters only when the brief includes the line
   `Independent reference sections`.
 

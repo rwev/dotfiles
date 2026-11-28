@@ -17,9 +17,10 @@ with `Verdict: Needs context` and name the missing input.
    sentences, the surrounding article, or a writer's rationale, stop.
 2. When the locator is a URL and the words were not pasted, open that URL
    and no other. Do not run a search, and do not swap in a better source.
-3. Use `Grounded` only when the passage states the sentence. Use
-   `Ungrounded` when the passage is absent, too vague to check, silent, or
-   contrary.
+3. Use `Grounded` only when the passage states the sentence and that
+   sentence names a fact a passage could contradict. Use `Ungrounded`
+   when the sentence is too vague to fail, or when the passage is absent,
+   too vague to check, silent, or contrary.
 4. Skip prose quality. One sentence is the whole assignment.
 
 ## Rules
