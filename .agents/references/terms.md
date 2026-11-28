@@ -11,6 +11,10 @@ against the others.
 | `coordinator`           | The main agent. It spawns lanes, merges reports, commits.  |
 | `lane`                  | One subagent with one narrow scope in a fan-out.           |
 | `_my-explorer`          | Read-only research for one scoped question.                |
+| `_my-drafter`           | Writes one document from a brief, outline, and sources.    |
+| `_my-editor`            | Read-only structural review of one draft.                  |
+| `_my-checker`           | Judges one claim against its cited passage.                |
+| `_my-tightener`         | Read-only wording pass on an approved draft.               |
 | `_my-implementer`       | Writes one task, test first.                               |
 | `_my-reviewer`          | Read-only review of logic, regressions, and coverage.      |
 | `_my-enforcer`          | Read-only clean-code review that shrinks the diff.         |
@@ -18,9 +22,9 @@ against the others.
 
 ## Statuses
 
-`_my-explorer` and `_my-implementer` end with `Status:` and one of `DONE`,
-`DONE_WITH_CONCERNS`, `BLOCKED`, or `NEEDS_CONTEXT`. The explorer uses only
-`DONE` and `NEEDS_CONTEXT`.
+`_my-explorer`, `_my-drafter`, and `_my-implementer` end with `Status:` and
+one of `DONE`, `DONE_WITH_CONCERNS`, `BLOCKED`, or `NEEDS_CONTEXT`. The
+explorer uses only `DONE` and `NEEDS_CONTEXT`.
 
 ## Verdicts
 
@@ -30,9 +34,12 @@ strict. `Needs context` is off the scale: missing input blocks the work.
 | Role                    | Scale                                          |
 | ----------------------- | ---------------------------------------------- |
 | `_my-reviewer`          | `Approved`, `Needs fixes`                      |
+| `_my-editor`            | `Approved`, `Needs substance`                  |
 | `_my-enforcer`          | `Approved`, `Needs shrinks`                    |
+| `_my-tightener`         | `Approved`, `Needs cuts`                       |
+| `_my-checker`           | `Grounded`, `Ungrounded`                       |
 | `_my-security-reviewer` | `Ship as-is`, `Ship with fixes`, `Do not ship` |
-| all three               | `Needs context`                                |
+| every verdict role      | `Needs context`                                |
 
 ## Severities
 

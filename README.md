@@ -2,6 +2,8 @@
 
 Minimal, fast zsh configuration.
 
+Agents that change this checkout read [AGENTS.md](AGENTS.md).
+
 ## What's included
 
 | Component | What it does |
@@ -147,6 +149,9 @@ No global directory is read by every AI CLI. Project-root `AGENTS.md` is a share
 working-instruction convention. Our `~/.agents/AGENTS.md` is a canonical source,
 not a universally discovered global instruction file.
 
+The root `AGENTS.md` in this checkout tells agents how to change the repo.
+The workflow architecture is in that file. The installer does not copy it.
+
 Skills use the standard `SKILL.md` format: YAML metadata followed by Markdown.
 The specification defines the format, not one mandatory installation path.
 The integration guide recommends `.agents/skills` for shared discovery.
@@ -166,8 +171,9 @@ Native instruction loading differs. See [Claude memory](https://code.claude.com/
 [Grok project rules](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/12-project-rules.md).
 
 Personas and specialist roles have no common discovery format. Their prompt
-bodies are shared; the installer generates native files. Portable content does
-not imply equal capabilities or permission enforcement.
+bodies are shared. Each harness template holds only that harness's frontmatter.
+The installer appends the shared body when it generates the native file.
+Portable content does not imply equal capabilities or permission enforcement.
 
 ### Install or update agents only
 
@@ -208,9 +214,9 @@ does not create duplicate Grok skill links.
 | Source                                  | Purpose                                                        |
 | --------------------------------------- | -------------------------------------------------------------- |
 | `.agents/AGENTS.md`                     | Concise working rules, safety defaults, and verification.      |
-| `.agents/skills/my-*/SKILL.md`          | Fourteen installed workflows. `my-ai-toolkit` is repo-only.    |
+| `.agents/skills/my-*/SKILL.md`          | Fifteen installed workflows. `my-ai-toolkit` is repo-only.     |
 | `.agents/personas/my-humble-servant.md` | Plain Markdown persona body.                                   |
-| `.agents/agents/_my-*.md`               | Five shared specialist instruction bodies.                     |
+| `.agents/agents/_my-*.md`               | Nine shared specialist instruction bodies.                     |
 | `.agents/references/orchestration.md`   | Shared scheduling, build-loop, and recovery rules.             |
 | `.agents/references/terms.md`           | Glossary tokens, caps, file schemas, and anchor rules.         |
 | `.claude/templates/`                    | Native role and output-style metadata, outside discovery.      |
@@ -270,22 +276,23 @@ and makes no network requests. See
 
 ### Skills and specialist roles
 
-| Skill                    | Purpose                                          |
-| ------------------------ | ------------------------------------------------ |
-| `my-build`               | Implement tasks with subagents, review, and enforcement. |
-| `my-capture-knowledge`   | Save session findings at the workspace root.     |
-| `my-commit`              | Stage and commit with a concise message.         |
-| `my-debug`               | Diagnose a failure without applying a fix.       |
-| `my-deps`                | Explain a dependency and its uses.               |
-| `my-explain`             | Explain code or a concept.                       |
-| `my-plan`                | Explore and scope work before coding.            |
-| `my-pr`                  | Prepare and open a pull request with approval.   |
-| `my-research`            | Research a question and map the possibilities.   |
-| `my-review`              | Review a diff with an independent reviewer.      |
-| `my-security`            | Audit code with an independent reviewer.         |
-| `my-test`                | Find and run the project's tests.                |
-| `my-tidy`                | Clean the current diff without behavior changes. |
-| `my-wip`                 | Save work in a labeled stash.                    |
+| Skill                  | Purpose                                                        |
+| ---------------------- | -------------------------------------------------------------- |
+| `my-build`             | Implement tasks with subagents, review, and enforcement.       |
+| `my-capture-knowledge` | Save session findings at the workspace root.                   |
+| `my-commit`            | Stage and commit with a concise message.                       |
+| `my-debug`             | Diagnose a failure without applying a fix.                     |
+| `my-deps`              | Explain a dependency and its uses.                             |
+| `my-explain`           | Explain code or a concept.                                     |
+| `my-plan`              | Explore and scope work before coding.                          |
+| `my-pr`                | Prepare and open a pull request with approval.                 |
+| `my-research`          | Research a question and map the possibilities.                 |
+| `my-review`            | Review a diff with an independent reviewer.                    |
+| `my-security`          | Audit code with an independent reviewer.                       |
+| `my-test`              | Find and run the project's tests.                              |
+| `my-tidy`              | Clean the current diff without behavior changes.               |
+| `my-wip`               | Save work in a labeled stash.                                  |
+| `my-write`             | Write a document with isolated research, drafting, and review. |
 
 Use native invocation syntax: `/my-commit` in Claude, or ask the CLI to use
 the named skill. Syntax depends on the harness.
@@ -302,12 +309,18 @@ OpenCode, and Copilot reviewers and enforcers still have shell access, so
 they are read-only by instruction only. Those settings and prompts are
 not enforced filesystem isolation.
 OpenCode roles deny the `subagent` action, so
-they cannot spawn an editing subagent. The Claude, Copilot, and Grok security
-reviewers also get web tools for CVE checks.
-Grok reviewer and enforcer profiles omit shell and edit tools and disable MCP access.
-Supply the full diff, test results, task requirements, and task baseline when
-you dispatch a Grok reviewer or enforcer. They cannot run Git commands or tests. These tool
-restrictions are not a filesystem sandbox. Grok's implementer can read, edit, and run shell commands.
+they cannot spawn an editing subagent. OpenCode starts from an allow-all
+policy, so a role keeps web access unless its template denies it. The
+explorer template also allows `webfetch`.
+Claude and Copilot security reviewers get web tools for CVE checks.
+The Grok security reviewer lists `web_search` and `web_fetch`.
+Grok reviewer, enforcer, and security-reviewer profiles omit shell and
+edit tools and disable MCP access.
+The generated `~/.grok/AGENTS.md` tells the parent to supply the full diff,
+test results, task requirements, and task baseline to those three roles.
+They cannot run Git commands or tests. These tool restrictions are not a
+filesystem sandbox. Grok's implementer can read, edit, and run shell
+commands. It does not disable MCP.
 See [Grok subagents](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/16-subagents.md).
 
 `my-plan` and `my-research` dispatch `_my-explorer` for read-only code and web
@@ -315,15 +328,22 @@ research. Each harness that installs it gives it read, search, shell, and web
 tools.
 Explorer profiles omit native edit tools or restrict edit permissions. It is
 read-only by instruction on Claude, OpenCode, Copilot, and Grok. The Grok
-explorer profile disables MCP access. Grok `web_fetch` works only when
-`features.web_fetch` is on.
+explorer profile disables MCP access. Grok `web_fetch`, used by the explorer,
+the checker, and the security reviewer, works only when `features.web_fetch`
+is on.
+
+The same adapters install `_my-drafter`, `_my-editor`, `_my-checker`, and
+`_my-tightener`. The drafter can edit and has no shell. The editor and the
+tightener are read-only. The checker can open a cited URL and has no web
+search. Grok disables MCP on all four. These limits are not a filesystem
+sandbox.
 
 `my-plan`, `my-research`, and `my-build` keep no state on disk. `my-plan` hands
 off a `## Plan` block in the conversation. `my-research` hands off its answer
 block in the conversation.
 
-`my-plan`, `my-research`, `my-build`, `my-security`, and `my-review` check
-required capabilities before work.
+`my-plan`, `my-research`, `my-build`, `my-security`, `my-review`, and
+`my-write` check required capabilities before work.
 They stop as unsupported when their required subagents or roles are absent.
 They do not replace independent review with self-review or sequential execution.
 In `my-build`, only the coordinator commits, after review and the enforcer approve.
@@ -419,23 +439,25 @@ Check native discovery after installation:
 - Copilot: inspect `/instructions`, `copilot skill list`, and custom agents.
 - Grok: run `grok inspect --json` to inspect instructions, skills, and agents.
 
-Implementation validation passed the 52 isolated tests. Grok Build 1.0.50
-discovered all thirteen skills and four native specialist definitions with
-default and custom homes. Active instructions contained one rules body and
-one persona when the Claude adapter was also installed. This passed with
-native config and with Claude instruction compatibility disabled by environment.
-The native check also discovered all secret-read rules. `bubblewrap` was
-present, so discovery ran with the workspace sandbox on. Without it, the check
-first verifies fail-closed startup, then uses `--sandbox off` only for
-discovery. Actual sandbox enforcement and Grok specialist execution
-remain unverified. Interactive Claude discovery remains unverified.
-OpenCode and Copilot were not installed on the validation machine, so their
-runtime discovery is unverified.
+The suite is 92 tests. When `grok` is on `PATH`, native discovery checks the
+nine specialist definitions and the fifteen installed skills in isolated
+homes. It sends no model requests. `my-ai-toolkit` stays undiscovered. Active
+instructions contain one rules body and one persona when the Claude adapter
+is also installed. The check covers the default home and a custom
+`GROK_HOME`. The installed config sets `[compat.claude] agents = false`, and
+the check repeats with `GROK_CLAUDE_AGENTS_ENABLED=false`. The installed
+sandbox profile is `off`. If Grok refuses startup
+because it cannot enforce a deny list, the test checks that error, then
+retries discovery with `--sandbox off`. The native check also discovers the
+secret-read rules. Actual sandbox enforcement and Grok specialist execution
+remain unverified. Interactive Claude discovery remains unverified. The
+suite does not launch OpenCode or Copilot.
 
 ## File layout
 
 ```text
 dotfiles/
+├── AGENTS.md           # Checkout guide for agents
 ├── install.sh          # Module flags and install order
 ├── install/
 │   ├── common.sh       # Shared file helpers

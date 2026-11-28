@@ -88,7 +88,7 @@ class InstallerTests(unittest.TestCase):
 
     def test_clean_and_idempotent(self):
         self.install('--tools=claude,opencode,copilot')
-        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 14)
+        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 15)
         for path in ['.claude/CLAUDE.md',
                      '.config/opencode/AGENTS.md', '.copilot/copilot-instructions.md']:
             text = (self.home / path).read_text()
@@ -97,7 +97,8 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(text.count('## Tone'), 0 if path.startswith(('.claude', '.config')) else 1)
         for harness, suffix in [('.claude', '.md'),
                                  ('.config/opencode', '.md'), ('.copilot', '.agent.md')]:
-            for role in ['implementer', 'reviewer', 'enforcer', 'security-reviewer', 'explorer']:
+            for role in ['implementer', 'reviewer', 'enforcer', 'security-reviewer', 'explorer',
+                         'drafter', 'editor', 'checker', 'tightener']:
                 path = self.home / harness / 'agents' / ('_my-' + role + suffix)
                 self.assertIn('## Process', path.read_text())
         before = self.snapshot()
@@ -181,7 +182,8 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(tomllib.loads((grok / 'config.toml').read_text()),
                          GROK_DEFAULTS)
         read_tools = {'read_file', 'grep', 'list_dir', 'todo_write'}
-        for role in ['implementer', 'reviewer', 'enforcer', 'security-reviewer', 'explorer']:
+        for role in ['implementer', 'reviewer', 'enforcer', 'security-reviewer', 'explorer',
+                     'drafter', 'editor', 'tightener', 'checker']:
             name = '_my-' + role
             text = (grok / 'agents' / (name + '.md')).read_text()
             _, header, body = text.split('---', 2)
@@ -193,6 +195,10 @@ class InstallerTests(unittest.TestCase):
                 'enforcer': read_tools,
                 'security-reviewer': read_tools | {'web_search', 'web_fetch'},
                 'explorer': {'read_file', 'grep', 'list_dir', 'run_terminal_cmd', 'web_search', 'web_fetch'},
+                'drafter': read_tools | {'search_replace'},
+                'editor': read_tools,
+                'tightener': read_tools,
+                'checker': read_tools | {'web_fetch'},
             }[role]
             self.assertEqual(set(metadata['tools'].split(', ')), expected_tools)
             if role != 'implementer':
@@ -201,7 +207,7 @@ class InstallerTests(unittest.TestCase):
             self.assertNotIn('## Grok review context', body)
             shared_body = (ROOT / '.agents/agents' / (name + '.md')).read_text().split('---', 2)[2]
             self.assertTrue(body.endswith(shared_body.lstrip('\n')))
-        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 14)
+        self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 15)
         self.assertFalse((grok / 'skills').exists())
         self.assertTrue((grok / 'statusline.sh').is_symlink())
         self.assertEqual((grok / 'statusline.sh').resolve(), ROOT / '.grok' / 'statusline.sh')
@@ -582,7 +588,8 @@ class InstallerTests(unittest.TestCase):
                                                 capture_output=True, text=True, timeout=30)
                     self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                     report = json.loads(result.stdout)
-                    self.assertTrue({'_my-implementer', '_my-reviewer', '_my-enforcer', '_my-security-reviewer', '_my-explorer'} <=
+                    self.assertTrue({'_my-implementer', '_my-reviewer', '_my-enforcer', '_my-security-reviewer', '_my-explorer',
+                                     '_my-drafter', '_my-editor', '_my-checker', '_my-tightener'} <=
                                     {agent['name'] for agent in report['agents']})
                     installed = {p.name for p in (ROOT / '.agents/skills').iterdir()} - {'my-ai-toolkit'}
                     names = {skill['name'] for skill in report['skills']}
@@ -824,7 +831,14 @@ class InstallerTests(unittest.TestCase):
             '  - { action: shell, resource: "git stash*", effect: deny }\n'
         )
         subagent_deny = '  - { action: subagent, resource: "*", effect: deny }\n'
-        for role in ['implementer', 'reviewer', 'enforcer', 'security-reviewer', 'explorer']:
+        drafter_permissions = (
+            'permissions:\n'
+            '  - { action: edit, resource: "*", effect: allow }\n'
+            '  - { action: shell, resource: "*", effect: deny }\n'
+            '  - { action: subagent, resource: "*", effect: deny }\n'
+        )
+        for role in ['implementer', 'reviewer', 'enforcer', 'security-reviewer', 'explorer',
+                     'drafter', 'editor', 'checker', 'tightener']:
             name = '_my-' + role
             canonical = frontmatter(ROOT / '.agents/agents' / (name + '.md'))[0]['description']
             claude = frontmatter(self.home / '.claude/agents' / (name + '.md'))[0]
@@ -835,21 +849,34 @@ class InstallerTests(unittest.TestCase):
                 self.assertEqual(fields['description'], canonical)
             claude_tools = set(claude['tools'].split(', '))
             copilot_tools = set(json.loads(copilot['tools']))
-            has_web = role in {'security-reviewer', 'explorer'}
             self.assertNotIn('TodoWrite', claude_tools)
-            self.assertEqual({'WebFetch', 'WebSearch'} <= claude_tools, has_web)
-            self.assertEqual('web' in copilot_tools, has_web)
+            if role == 'checker':
+                self.assertIn('WebFetch', claude_tools)
+                self.assertNotIn('WebSearch', claude_tools)
+                self.assertIn('web', copilot_tools)
+            elif role in {'drafter', 'editor', 'tightener'}:
+                self.assertFalse({'WebFetch', 'WebSearch'} & claude_tools)
+                self.assertNotIn('web', copilot_tools)
+            else:
+                has_web = role in {'security-reviewer', 'explorer'}
+                self.assertEqual({'WebFetch', 'WebSearch'} <= claude_tools, has_web)
+                self.assertEqual('web' in copilot_tools, has_web)
             if role == 'implementer':
                 opencode_permissions = implementer_permissions
+            elif role == 'drafter':
+                opencode_permissions = drafter_permissions
             else:
                 opencode_permissions = readonly_permissions
-                if role == 'explorer':
+                if role in {'explorer', 'checker'}:
                     opencode_permissions += '  - { action: webfetch, resource: "*", effect: allow }\n'
                 opencode_permissions += subagent_deny
             self.assertEqual(opencode['mode'], 'subagent')
             self.assertIn(opencode_permissions, opencode_header)
             self.assertTrue(opencode_header.rstrip().endswith(opencode_permissions.rstrip()))
-            if role != 'implementer':
+            if role == 'drafter':
+                self.assertTrue({'Write', 'Edit'} <= claude_tools)
+                self.assertIn('edit', copilot_tools)
+            elif role != 'implementer':
                 self.assertFalse({'Write', 'Edit'} & claude_tools)
                 self.assertNotIn('edit', copilot_tools)
 
@@ -901,7 +928,7 @@ class InstallerTests(unittest.TestCase):
             text = source.read_text()
             self.assertIn('name: ' + source.parent.name, text)
             self.assertIn('description:', text)
-        for skill in ['my-build', 'my-plan', 'my-research', 'my-security']:
+        for skill in ['my-build', 'my-plan', 'my-research', 'my-security', 'my-write']:
             text = (self.home / f'.agents/skills/{skill}/SKILL.md').read_text()
             self.assertIn('Unsupported:', text)
         self.assertTrue((self.home / '.agents/references/orchestration.md').is_file())
@@ -912,11 +939,16 @@ class InstallerTests(unittest.TestCase):
             for directory in ['agents', 'output-styles']:
                 self.assertEqual(list((ROOT / tool / directory).glob('_my-*.md')), [])
         self.assertFalse((ROOT / '.claude/output-styles/my-humble-servant.md').exists())
-        for role in ['implementer', 'reviewer', 'enforcer', 'security-reviewer', 'explorer']:
+        for role in ['implementer', 'reviewer', 'enforcer', 'security-reviewer', 'explorer',
+                     'editor', 'tightener', 'checker', 'drafter']:
             text = (self.home / f'.copilot/agents/_my-{role}.agent.md').read_text()
             self.assertIn('include-custom-instructions: true', text)
             self.assertIn('tools:', text)
-            self.assertIn('"execute"', text)
+            if role == 'drafter':
+                self.assertIn('"edit"', text)
+                self.assertNotIn('"execute"', text)
+            else:
+                self.assertIn('"execute"', text)
 
     def test_help_flag(self):
         flags = ['--everything', '--packages', '--pretty', '--zshrc', '--git', '--agents', '--shell',
@@ -1049,7 +1081,7 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual((self.home / '.agents/backups/skills/my-test.bak/SKILL.md').read_text(),
                          'custom same-name skill')
         self.assertTrue(own_skill.is_symlink())
-        self.assertEqual(len(list((self.home / '.agents/skills').glob('my-*'))), 14)
+        self.assertEqual(len(list((self.home / '.agents/skills').glob('my-*'))), 15)
         self.assertFalse((self.home / '.agents/skills/my-ai-toolkit').exists())
         self.assertFalse(any(p.name.endswith('.bak') for p in (self.home / '.agents/skills').iterdir()))
 
@@ -1102,7 +1134,7 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual((outside / 'SKILL.md').read_text(), 'custom same-name skill')
         installed = {p.name for p in (ROOT / '.agents/skills').iterdir()} - {'my-ai-toolkit'}
         for root in [directory, self.home / '.agents/skills']:
-            self.assertEqual(len(list(root.iterdir())), 14)
+            self.assertEqual(len(list(root.iterdir())), 15)
             self.assertEqual({p.name for p in root.iterdir()}, installed)
 
     def test_zshrc_module_only(self):
