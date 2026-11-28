@@ -72,8 +72,9 @@ linked files for the rules.
 1. **Plan.** Use a `## Plan` block from `my-plan` when one exists.
    Otherwise dispatch `_my-explorer`. `my-research` answers a question
    and stops. Start `my-plan` only when asked.
-2. **Approve.** Show the task list and wait. Approval does not authorize
-   commits.
+2. **Approve.** Show the task list and wait. That go-ahead authorizes
+   one commit per finished task. The rule is in
+   `.agents/skills/my-build/SKILL.md`.
 3. **Implement.** Dispatch `_my-implementer` for each ready task. It
    writes one task, test first, and reports changed paths. It does not
    commit. See `.agents/agents/_my-implementer.md`.
@@ -81,7 +82,12 @@ linked files for the rules.
    diff.
 5. **Enforce.** After that reviewer approves, dispatch a fresh
    `_my-enforcer`.
-6. **Hand off.** Point at `my-pr`. Leave the pull request unopened.
+6. **Commit.** As soon as the task is completed, follow
+   `.agents/skills/my-commit/SKILL.md`. Do not wait for the other tasks,
+   and do not ask again. The gate is
+   [task-commit](.agents/references/orchestration.md#task-commit).
+7. **Hand off.** Point at `my-pr`. Do not push. Leave the pull request
+   unopened.
 
 `my-build` requires `_my-explorer`, `_my-implementer`, `_my-reviewer`,
 and `_my-enforcer`. Stop when one is missing. Do not replace that review
@@ -90,10 +96,6 @@ with your own.
 `my-security` audits with `_my-security-reviewer`. It sits outside the
 `my-build` required set. `my-tidy` may clean a diff inline when
 `_my-enforcer` is missing. `my-build` stops instead.
-
-Only the coordinator commits, and only when commits are authorized.
-Commit after tests pass, review approves, and the enforcer approves.
-Stage the paths the implementer lists.
 
 Caps, status tokens, and verdict tokens are in
 `.agents/references/terms.md`. Scheduling, fan-out, recovery, and the
@@ -108,7 +110,7 @@ The steps are in `.agents/skills/my-write/SKILL.md`.
 
 - Ask before you install into `$HOME`, push, open a pull request, or
   delete files.
-- Commit only when asked.
+- Follow commit and push approval in `.agents/AGENTS.md`.
 - Keep tests and checks as strong as you found them.
 - Match the surrounding style. Make the smallest change that solves the
   task.

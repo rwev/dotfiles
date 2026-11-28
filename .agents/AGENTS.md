@@ -51,6 +51,7 @@ override these defaults.
 - Ask before destructive or hard-to-undo actions (deleting files, dropping data, force-push, `rm -rf`).
 - Ask before outward-facing actions (pushing, opening/commenting on PRs, deploying, sending anything external).
 - Never commit or push unless explicitly asked. Never commit secrets, tokens, or credentials.
+- An approved [`my-build`](~/.agents/skills/my-build/SKILL.md) task list is the ask for the commits that skill names. A push still needs its own ask.
 - Don't disable, skip, or weaken tests/checks to make something pass.
 
 ## Verifying

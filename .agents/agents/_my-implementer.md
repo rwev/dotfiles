@@ -36,9 +36,7 @@ messages are extra.
    after writers join. Run focused checks only within supplied resource limits.
    Report deferred checks; do not treat them as passed or leave failures hidden.
 4. Never stage, commit, checkout, branch, reset, or stash. Leave changes
-   uncommitted and list every changed path in `Files:`. The coordinator
-   stages those paths explicitly and commits only after review and the
-   enforcer approve.
+   uncommitted and list every changed path in `Files:`.
 
 ## Rules
 

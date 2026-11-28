@@ -278,9 +278,9 @@ and makes no network requests. See
 
 | Skill                  | Purpose                                                        |
 | ---------------------- | -------------------------------------------------------------- |
-| `my-build`             | Implement tasks with subagents, review, and enforcement.       |
+| `my-build`             | Implement each task, then commit it through `my-commit`.       |
 | `my-capture-knowledge` | Save session findings at the workspace root.                   |
-| `my-commit`            | Stage and commit with a concise message.                       |
+| `my-commit`            | Stage paths and commit. Used by hand and by `my-build`.        |
 | `my-debug`             | Diagnose a failure without applying a fix.                     |
 | `my-deps`              | Explain a dependency and its uses.                             |
 | `my-explain`           | Explain code or a concept.                                     |
@@ -346,8 +346,13 @@ block in the conversation.
 `my-write` check required capabilities before work.
 They stop as unsupported when their required subagents or roles are absent.
 They do not replace independent review with self-review or sequential execution.
-In `my-build`, only the coordinator commits, after review and the enforcer approve.
-Implementers never commit; they list changed paths for explicit staging.
+An approved `my-build` task list authorizes one commit per finished task.
+The coordinator follows `my-commit` as soon as that task's tests pass,
+the reviewer approves, and the enforcer approves. It does not wait for
+the other tasks, and it does not ask again. A later fix is a new task
+and gets its own commit. A push or a pull request still needs its own
+ask. The gate is
+[task-commit](.agents/references/orchestration.md#task-commit).
 
 ### Local overrides and migration
 

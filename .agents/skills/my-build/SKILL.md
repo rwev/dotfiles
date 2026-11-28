@@ -27,17 +27,26 @@ Follow [orchestration](~/.agents/references/orchestration.md).
    to map target code, callers, and test seams. Resolve only
    high-importance, high-rework decisions with the user.
 2. **Approve** — Show the task list and get go-ahead before product edits.
-   Implementation approval does not authorize commits.
-3. **Implement batch** — Dispatch `_my-implementer` for dependency-ready
+   That go-ahead authorizes one commit for each completed task. Follow
+   [my-commit](~/.agents/skills/my-commit/SKILL.md) and
+   [task-commit](~/.agents/references/orchestration.md#task-commit).
+   Do not ask again. A push or a pull request still needs its own ask.
+3. **Implement** — Dispatch `_my-implementer` for dependency-ready
    tasks in blocker order under
    [Scheduling](~/.agents/references/orchestration.md#scheduling).
 4. **Review** — Dispatch a fresh `_my-reviewer` for each new or changed
-   diff. Always review, even small tasks.
-5. **Final review** — Once all tasks finish, review the full range over the
+   diff. Always review, even small tasks. Then follow
+   [fix-cap](~/.agents/references/orchestration.md#fix-cap).
+5. **Commit** — Follow
+   [task-commit](~/.agents/references/orchestration.md#task-commit)
+   as soon as the task is completed. Do not wait for the other tasks.
+6. **Final review** — Once all tasks finish, review the full range over the
    union of task-owned paths (split via
    [Parallel fan-out](~/.agents/references/orchestration.md#parallel-fan-out)
-   when broad).
-6. **Hand off** — Point me at `my-pr`. Do not open the PR yourself.
+   when broad). A fix from this pass is a new task. Run steps 3 to 5
+   for it.
+7. **Hand off** — Point me at `my-pr`. Do not push. Do not open the PR
+   yourself.
 
 ## Dispatch
 
