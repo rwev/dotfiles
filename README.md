@@ -399,11 +399,7 @@ all tracked settings exist. If a missing
 setting must be added, the installer backs up the link and creates a real
 config file; it does not change the external target. Custom `GROK_HOME` paths
 receive a shell-quoted statusline command. Existing statusline commands stay
-unchanged. A later install removes any symlink at `$GROK_DIR/notify.sh`.
-It does not check the link target. A regular `notify.sh` file stays.
-It removes `notifications.json` when every hook command is `../notify.sh`,
-`hooks` is a real directory, and that file is not a symlink. Other hook
-files stay. A symlinked `hooks` directory is left alone.
+unchanged.
 
 Global instruction overrides are appended from these machine-local files:
 
@@ -467,7 +463,7 @@ Check native discovery after installation:
 - Copilot: inspect `/instructions`, `copilot skill list`, and custom agents.
 - Grok: run `grok inspect --json` to inspect instructions, skills, and agents.
 
-The suite is 92 tests. When `grok` is on `PATH`, native discovery checks the
+The suite is 90 tests. When `grok` is on `PATH`, native discovery checks the
 nine specialist definitions and the fifteen installed skills in isolated
 homes. It sends no model requests. `my-ai-toolkit` stays undiscovered. Active
 instructions contain one rules body and one persona when the Claude adapter

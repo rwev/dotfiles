@@ -234,38 +234,12 @@ install_copilot() {
   install_native_agents copilot "$COPILOT_DIR/agents"
 }
 
-grok_notification_commands_are_notify_only() {
-  jq -e '
-    def commands: [.. | objects | .command? // empty | select(type == "string")];
-    (commands | length) > 0 and (commands | all(. == "../notify.sh"))
-  ' "$1" >/dev/null 2>&1
-}
-
-# Drop the notification hook this installer used to copy.
-# Leave custom hook files alone, and never follow a symlinked hooks directory.
-remove_managed_grok_notifications() {
-  local notify="$GROK_DIR/notify.sh" hooks="$GROK_DIR/hooks" dest
-  dest="$hooks/notifications.json"
-  if [[ -L "$notify" ]]; then
-    info "Removing $notify"
-    run rm -- "$notify"
-  fi
-  if [[ -L "$hooks" || ! -f "$dest" || -L "$dest" ]]; then
-    return 0
-  fi
-  if grok_notification_commands_are_notify_only "$dest"; then
-    info "Removing $dest"
-    run rm -- "$dest"
-  fi
-}
-
 install_grok() {
   ensure_directory "$GROK_DIR"
   install_instructions "$GROK_DIR/AGENTS.md" true grok
   install_native_agents grok "$GROK_DIR/agents"
   install_grok_config "$GROK_DIR/config.toml"
   link_file "$DOTFILES_DIR/.grok/statusline.sh" "$GROK_DIR/statusline.sh"
-  remove_managed_grok_notifications
 }
 
 summarize_harnesses() {
