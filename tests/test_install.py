@@ -837,6 +837,14 @@ class InstallerTests(unittest.TestCase):
             '  - { action: shell, resource: "*", effect: deny }\n'
             '  - { action: subagent, resource: "*", effect: deny }\n'
         )
+        prose_readonly_permissions = (
+            'permissions:\n'
+            '  - { action: edit, resource: "*", effect: deny }\n'
+            '  - { action: shell, resource: "*", effect: deny }\n'
+            '  - { action: webfetch, resource: "*", effect: deny }\n'
+            '  - { action: websearch, resource: "*", effect: deny }\n'
+            '  - { action: subagent, resource: "*", effect: deny }\n'
+        )
         for role in ['implementer', 'reviewer', 'enforcer', 'security-reviewer', 'explorer',
                      'drafter', 'editor', 'checker', 'tightener']:
             name = '_my-' + role
@@ -857,6 +865,9 @@ class InstallerTests(unittest.TestCase):
             elif role in {'drafter', 'editor', 'tightener'}:
                 self.assertFalse({'WebFetch', 'WebSearch'} & claude_tools)
                 self.assertNotIn('web', copilot_tools)
+                if role in {'editor', 'tightener'}:
+                    self.assertNotIn('Bash', claude_tools)
+                    self.assertNotIn('execute', copilot_tools)
             else:
                 has_web = role in {'security-reviewer', 'explorer'}
                 self.assertEqual({'WebFetch', 'WebSearch'} <= claude_tools, has_web)
@@ -865,6 +876,8 @@ class InstallerTests(unittest.TestCase):
                 opencode_permissions = implementer_permissions
             elif role == 'drafter':
                 opencode_permissions = drafter_permissions
+            elif role in {'editor', 'tightener'}:
+                opencode_permissions = prose_readonly_permissions
             else:
                 opencode_permissions = readonly_permissions
                 if role in {'explorer', 'checker'}:
@@ -947,6 +960,11 @@ class InstallerTests(unittest.TestCase):
             if role == 'drafter':
                 self.assertIn('"edit"', text)
                 self.assertNotIn('"execute"', text)
+            elif role in {'editor', 'tightener'}:
+                self.assertNotIn('"edit"', text)
+                self.assertNotIn('"execute"', text)
+                self.assertIn('"read"', text)
+                self.assertIn('"search"', text)
             else:
                 self.assertIn('"execute"', text)
 

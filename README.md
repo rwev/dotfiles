@@ -8,18 +8,18 @@ Agents that change this checkout read [AGENTS.md](AGENTS.md).
 
 | Component | What it does |
 |---|---|
-| **[pure](https://github.com/sindresorhus/pure)** | Minimal async prompt — shows git status, last command duration, virtualenv |
-| **[zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)** | Fish-like inline suggestions from history |
+| **[pure](https://github.com/sindresorhus/pure)** | Minimal prompt. Shows git status and virtualenv. Shows command duration after 5 seconds. |
+| **[zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)** | Fish-like inline suggestions from history and completion |
 | **[zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)** | Highlight valid commands green, bad commands red |
 | **[zsh-history-substring-search](https://github.com/zsh-users/zsh-history-substring-search)** | Type part of a command, use ↑/↓ to search matching history |
 | **[zsh-completions](https://github.com/zsh-users/zsh-completions)** | Hundreds of extra tab-completion definitions |
 | **[zsh-z](https://github.com/agkozak/zsh-z)** | Jump to frecent directories: `z proj` |
-| **[fzf](https://github.com/junegunn/fzf)** | Fuzzy search: Ctrl-R (history), Ctrl-T (files), Alt-C (cd) |
+| **[fzf](https://github.com/junegunn/fzf)** | Fuzzy finder. Ctrl-R, Ctrl-T, and Alt-C load with its shell integration. |
 | **[antidote](https://antidote.sh)** | Fast static plugin manager |
 
 ## Install
 
-A run with no module flags is a dry run of every module. It changes nothing.
+A run with no module flags is a dry run of every module. It writes nothing.
 Use `--everything` to install every module.
 
 ```bash
@@ -38,7 +38,9 @@ option, and environment variable. It changes nothing.
 
 ### Dry run first
 
-`--dry-run` changes nothing. It previews only the selected modules.
+`--dry-run` writes nothing. It previews only the selected modules.
+The packages preview exits when zsh, fzf, git, or jq is missing and no
+supported package manager is on `PATH`. Later modules are not previewed.
 
 ```bash
 bash ~/dotfiles/install.sh --dry-run
@@ -59,15 +61,15 @@ A module does not install another module.
 | `--packages` | Install missing zsh, fzf, git, and jq.                                                                              |
 | `--pretty`   | Install bat and glow when a supported package manager can.                                                          |
 | `--zshrc`    | Link the tracked zshrc to `~/.zshrc.core`. Link `~/.zsh_plugins.txt`. Make `~/.zshrc` source `"$HOME/.zshrc.core"`. |
-| `--git`      | Link `~/.gitconfig`.                                                                                                |
+| `--git`      | Link `.gitconfig` to `~/.gitconfig`.                                                                                |
 | `--agents`   | Install the shared layer and the selected harnesses.                                                                |
-| `--shell`    | Add zsh to `/etc/shells` when needed. Change the login shell.                                                       |
+| `--shell`    | Add zsh to `/etc/shells` when needed. Run `chsh` when `$SHELL` is not already zsh.                                  |
 | `--antidote` | Clone antidote when it is missing.                                                                                  |
 
 - `--zshrc` does not install packages, change the login shell, or clone antidote.
 - `--git` does not install the git binary.
 - `--agents` does not install jq.
-- jq must be on `PATH` for the agents module.
+- jq must be on `PATH` for the agents module. A dry run does not install it.
 
 Duplicate flags are accepted. An unknown argument fails.
 The installer prints `Unknown argument:`.
@@ -83,6 +85,8 @@ Use `--agents` to combine agents with other modules.
 It defaults to `claude,grok` when the agents module runs.
 `--tools` replaces that default.
 An unknown tool fails. The installer prints `Unknown tool:`.
+An empty list, a leading comma, a trailing comma, or `,,` fails first.
+The installer prints `Invalid tool list:`.
 Use `universal` alone. Otherwise the installer prints `universal must be used alone`.
 Passing a valid `--tools` list when agents is not selected is an error.
 The installer prints `--tools requires the agents module`.
@@ -117,6 +121,15 @@ More `--agents-only` examples are under "Install or update agents only".
 | `Alt-C` | Fuzzy cd into a directory |
 | `Ctrl-→` / `Ctrl-←` | Jump forward/backward by word |
 
+`.zshrc` binds ↑ and ↓ only for the sequences `^[[A` and `^[[B]`.
+A terminal that sends `^[OA` or `^[OB` keeps ordinary line history.
+Ctrl-P and Ctrl-N always use substring search.
+
+Ctrl-R, Ctrl-T, and Alt-C come from fzf. `.zshrc` sources them when
+`/usr/share/doc/fzf/examples/key-bindings.zsh` or `~/.fzf.zsh` exists.
+`--packages` installs the `fzf` binary and does not install that file.
+When `fd` is on `PATH`, Ctrl-T lists files.
+
 ## Usage tips
 
 ### z — directory jumping
@@ -130,12 +143,11 @@ z -l            # list all frecent dirs
 
 ### Machine-local config
 
-`install.sh` symlinks the tracked config to `~/.zshrc.core`, and leaves
-`~/.zshrc` as a real, untracked file that just does `source
-"$HOME/.zshrc.core"`. That's deliberate: installers (nvm, bun, etc.)
-universally append PATH exports and init lines to `~/.zshrc` by convention —
-since it's untracked, that churn never touches the repo. Anything you want to
-add by hand (tokens, work-specific paths) goes there too.
+The zshrc module symlinks the tracked `.zshrc` to `~/.zshrc.core`.
+It leaves `~/.zshrc` as a real file. When that file does not already
+source `"$HOME/.zshrc.core"`, the installer prepends the line and keeps
+the existing text. Other tools can append PATH exports there. Lines you
+add by hand, such as tokens and work paths, go there too.
 
 ## AI agent configuration
 
@@ -204,7 +216,7 @@ At the end of the agent step, the installer prints the installed harnesses and
 the excluded harnesses. A dry run prints the harnesses it would install.
 
 The installer honors `CLAUDE_CONFIG_DIR` and `COPILOT_HOME`.
-OpenCode uses `XDG_CONFIG_HOME`.
+OpenCode uses `$XDG_CONFIG_HOME/opencode` (default `~/.config/opencode`).
 Grok Build uses `GROK_HOME` directly, with `~/.grok` as the default. It still
 reads shared skills from `~/.agents/skills` with a custom home. The installer
 does not create duplicate Grok skill links.
@@ -334,8 +346,13 @@ is on.
 
 The same adapters install `_my-drafter`, `_my-editor`, `_my-checker`, and
 `_my-tightener`. The drafter can edit and has no shell. The editor and the
-tightener are read-only. The checker can open a cited URL and has no web
-search. Grok disables MCP on all four. These limits are not a filesystem
+tightener can read and search the supplied draft. They have no edit tool,
+no shell, and no web tools. OpenCode denies `edit`, `shell`, `webfetch`,
+`websearch`, and `subagent` for both. Claude and Grok checkers can open a
+cited URL and have no web search. Copilot's checker has `execute` and
+`web`, which covers search and fetch. OpenCode's checker allows
+`webfetch` and shell and does not deny web search, so search stays
+allowed. Grok disables MCP on all four. These limits are not a filesystem
 sandbox.
 
 `my-plan`, `my-research`, and `my-build` keep no state on disk. `my-plan` hands
@@ -359,13 +376,17 @@ ask. The gate is
 Generated files are installed individually. Shared skills, references, rules,
 persona, and role sources are linked into `~/.agents`. Skill edits reach native
 discovery through live links. Rerun the installer after rule, persona, role,
-template, or runtime-default changes to regenerate native outputs and the
-manual export.
+template, or tracked Grok default changes. The rerun regenerates native
+outputs and the manual export. It adds missing Grok keys. A Grok key that
+is already set stays, including an old default.
 
 Claude and OpenCode JSON settings are deep-merged with machine-local files.
 Local keys win; local arrays replace default arrays. Existing real settings
-are captured on first installation. Edit `~/.claude/settings.local.json` or
-`~/.config/opencode/opencode.local.json`, then rerun the installer.
+are captured on first installation. Edit
+`$CLAUDE_CONFIG_DIR/settings.local.json` (default
+`~/.claude/settings.local.json`) or
+`$XDG_CONFIG_HOME/opencode/opencode.local.json` (default
+`~/.config/opencode/opencode.local.json`), then rerun the installer.
 
 Grok keeps existing values, including an explicit `agents = true`.
 That value, or `GROK_CLAUDE_AGENTS_ENABLED=true`, can restore duplicate Claude
@@ -378,9 +399,11 @@ all tracked settings exist. If a missing
 setting must be added, the installer backs up the link and creates a real
 config file; it does not change the external target. Custom `GROK_HOME` paths
 receive a shell-quoted statusline command. Existing statusline commands stay
-unchanged. A later install removes a managed `notify.sh` symlink and a
-`notifications.json` whose hook commands are only `../notify.sh`. Other hook
-files stay in place. A symlinked `hooks` directory is left alone.
+unchanged. A later install removes any symlink at `$GROK_DIR/notify.sh`.
+It does not check the link target. A regular `notify.sh` file stays.
+It removes `notifications.json` when every hook command is `../notify.sh`,
+`hooks` is a real directory, and that file is not a symlink. Other hook
+files stay. A symlinked `hooks` directory is left alone.
 
 Global instruction overrides are appended from these machine-local files:
 
@@ -432,10 +455,10 @@ python3 -m unittest discover -s tests -v
 The suite covers clean installs, repeat runs, target selection, custom homes,
 dry runs, local overrides, migration, backups, invalid JSON, and untouched
 runtime files. It also checks generated profiles and skill metadata.
-`tests/test_docs.py` lints the agent docs against `terms.md`: schemas,
-tokens, anchors, links, and skill-agent duplication. When
-`grok` is on `PATH`, it checks native discovery in isolated homes outside this
-repository. The check sends no model requests. Script tests use an isolated
+`tests/test_docs.py` checks schemas and tokens under `.agents/` against
+`terms.md`. The same file checks anchors, links, and skill-agent
+duplication. When `grok` is on `PATH`, the suite checks native
+discovery in isolated homes outside this repository. The check sends no model requests. Script tests use an isolated
 PATH and send no network requests.
 
 Check native discovery after installation:
@@ -463,6 +486,8 @@ suite does not launch OpenCode or Copilot.
 ```text
 dotfiles/
 ├── AGENTS.md           # Checkout guide for agents
+├── README.md           # Human guide to this checkout
+├── writing-toolkit.md  # Design note for the writing loop
 ├── install.sh          # Module flags and install order
 ├── install/
 │   ├── common.sh       # Shared file helpers
@@ -470,6 +495,8 @@ dotfiles/
 │   ├── packages.sh     # Package installation
 │   ├── shell.sh        # Dotfile links and shell setup
 │   └── agents.sh       # Per-tool agent adapters
+├── .gitconfig          # Linked to ~/.gitconfig
+├── .gitignore          # Paths this checkout does not track
 ├── .zshrc              # ~/.zshrc.core; local ~/.zshrc loads it
 ├── .zsh_plugins.txt    # Antidote plugin list
 ├── .agents/            # Canonical rules, skills, persona, references, and roles
@@ -482,6 +509,8 @@ dotfiles/
 
 ## Updating plugins
 
-```bash
+`antidote update` is a zsh function. Run it in a shell that has loaded antidote.
+
+```zsh
 antidote update
 ```
