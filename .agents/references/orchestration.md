@@ -22,11 +22,11 @@ Use these rules from `my-plan`, `my-build`, and related skills.
   finding, ask. Do not retry silently.
 - Mark a task completed only after tests pass, review approves, and the
   enforcer approves.
-- Only the coordinator commits. Implementers never stage or commit; they
-  report changed paths in `Files:`. When commits are authorized, stage those
-  paths explicitly. Commit serially after writers stop, review approves,
-  and the enforcer approves. Write a concise conventional-commit message
-  scoped to the task.
+- <a id="task-commit"></a>Only the `coordinator` commits, and only when
+  the skill that owns the loop authorizes commits. When a task is
+  completed, follow
+  [my-commit](~/.agents/skills/my-commit/SKILL.md) for that task alone.
+  Stage only its `Files:`. Commit it before you commit another task.
 
 ## Scheduling
 
@@ -35,8 +35,9 @@ Use these rules from `my-plan`, `my-build`, and related skills.
   (including generated files and fixtures), read dependencies, and shared
   resources. Include Git index/HEAD, lockfiles, caches/build dirs, databases,
   services, or ports when relevant.
-- Start only dependency-ready tasks. Prove no write/write or write/read
-  conflicts or overlapping mutable resource use. Otherwise serialize.
+- <a id="shared-resources"></a>Start only dependency-ready tasks. Prove no
+  write/write or write/read conflicts or overlapping mutable resource use.
+  Otherwise serialize.
   Unresolved ownership or unapproved dependencies also require serialization.
 - Give each agent its ownership limits. Say it is not alone and must not
   overwrite or revert peer changes. Reassign expanded scope only after the

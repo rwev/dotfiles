@@ -8,8 +8,8 @@ override these defaults.
 
 - `_my-*` files are specialist agent roles. Dispatch them as native subagents.
 - `my-*` directories are skills. Invoke them as workflows.
-- `my-build`, `my-security`, `my-plan`, `my-research`, and `my-review` need
-  native subagents.
+- `my-build`, `my-security`, `my-plan`, `my-research`, `my-review`, and
+  `my-write` need native subagents.
 - Stop as unsupported when a required role or subagent is missing.
 - Do not replace independent review with self-review.
 - Use the exact role, status, verdict, and severity tokens in
@@ -51,6 +51,7 @@ override these defaults.
 - Ask before destructive or hard-to-undo actions (deleting files, dropping data, force-push, `rm -rf`).
 - Ask before outward-facing actions (pushing, opening/commenting on PRs, deploying, sending anything external).
 - Never commit or push unless explicitly asked. Never commit secrets, tokens, or credentials.
+- An approved [`my-build`](~/.agents/skills/my-build/SKILL.md) task list is the ask for the commits that skill names. A push still needs its own ask.
 - Don't disable, skip, or weaken tests/checks to make something pass.
 
 ## Verifying

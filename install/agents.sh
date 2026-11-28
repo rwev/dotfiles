@@ -46,6 +46,13 @@ Supply the full diff and test results to `_my-reviewer`,
 and the task baseline.
 These agents cannot run git or tests. A commit range alone is not enough.
 If context is missing, have the agent request the missing context.
+
+For a document, `_my-editor` gets the brief, the outline, the full text,
+and the source list. `_my-checker` gets one sentence and its passage,
+not the article. `_my-tightener` gets the approved text, the terms, the
+genre, and the editor `Approved` line. `_my-drafter` gets the brief, the
+style sheet, the sources, and which pass this is. None of them see this
+chat or a drafter report. The drafter has no shell.
 EOF
   fi
   if [[ -f "$local_override" ]]; then
@@ -145,6 +152,7 @@ render_shared_export() {
       my-security) printf ' — requires an independent read-only security-reviewer role.' ;;
       my-review) printf ' — requires an independent read-only reviewer role.' ;;
       my-plan|my-research) printf ' — requires an independent read-only explorer role.' ;;
+      my-write) printf ' — requires drafter, editor, checker, and tightener roles. Source gathering uses the explorer when no sources were supplied.' ;;
     esac
     printf '\n'
   done
