@@ -42,7 +42,9 @@ and the attempt limit in
 4. Ask a fresh `_my-drafter` to compose at the brief's path. Use one
    drafter for the whole piece, except when the genre is reference and
    the approved outline says sections do not refer to each other. Then
-   use one drafter per section, at most 5 section drafters at once.
+   use one drafter per section, under
+   [fanout-cap](~/.agents/references/orchestration.md#fanout-cap) and
+   [shared-resources](~/.agents/references/orchestration.md#shared-resources).
 5. Ask a fresh `_my-editor` to read the full text. Resume `_my-drafter`
    for substance findings, then ask a fresh editor again.
 6. Break the accepted text into one-sentence claims with pronouns filled

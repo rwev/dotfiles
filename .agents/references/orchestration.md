@@ -35,8 +35,9 @@ Use these rules from `my-plan`, `my-build`, and related skills.
   (including generated files and fixtures), read dependencies, and shared
   resources. Include Git index/HEAD, lockfiles, caches/build dirs, databases,
   services, or ports when relevant.
-- Start only dependency-ready tasks. Prove no write/write or write/read
-  conflicts or overlapping mutable resource use. Otherwise serialize.
+- <a id="shared-resources"></a>Start only dependency-ready tasks. Prove no
+  write/write or write/read conflicts or overlapping mutable resource use.
+  Otherwise serialize.
   Unresolved ownership or unapproved dependencies also require serialization.
 - Give each agent its ownership limits. Say it is not alone and must not
   overwrite or revert peer changes. Reassign expanded scope only after the
