@@ -244,14 +244,12 @@ The adapter does not pin a model. Its defaults are:
 - Fullscreen UI with the dark theme and a command statusline.
 - `permission_mode = "always-approve"`, `yolo = true`, `max_thoughts_width = 120`, `compact_mode = true`, `show_timeline = true`, `page_flip_on_send = false`, and `show_thinking_blocks = true`.
 - A 600-second ask-user timeout; subagents and active-agent messages enabled.
-- Model inheritance for subagents; sandbox profile `workspace`.
+- Model inheritance for subagents; sandbox profile `off`.
 - Read-deny rules for common secret paths.
 - `[compat.claude] agents = false`, to avoid duplicate Claude global instructions.
 
 Other Claude compatibility settings remain unchanged. The `grk`, `grkc`, and
 `grkr` aliases add `--always-approve`. They do not select a sandbox profile.
-Linux workspace sandboxing requires `bubblewrap`. Grok refuses startup if it
-cannot enforce the deny rules.
 See
 [Grok configuration](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/26-config-reference.md)
 and [sandbox profiles](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/18-sandbox.md).
