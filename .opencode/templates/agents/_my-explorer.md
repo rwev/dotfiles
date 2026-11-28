@@ -1,5 +1,5 @@
 ---
-description: Read-only codebase and web research for one scoped question. Dispatch with the full task context and the scope — it has no other context.
+description: Read-only research for one scoped question. Dispatch with the full task context and the scope — it has no other context.
 mode: subagent
 permissions:
   - { action: edit, resource: "*", effect: deny }

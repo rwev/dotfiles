@@ -132,17 +132,17 @@ one voice.
 
 Designs that the sources do not support:
 
-| Design                                                                | Result    | Why                                                                           |
-| --------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------------- |
-| Parallel research, one drafter, then editor, checkers, and tightener | supported | Matches the research, editing, and claim-check sources above.                 |
-| Parallel section writers as the default                               | ruled out | Coherence drops, and the sections disagree.                                   |
-| Reuse the code reviewer and enforcer                                  | ruled out | Those roles judge diffs, tests, and code cruft.                               |
-| Self-critique in the drafter's context                                | ruled out | The critic shares the draft, and a reasoning trace can swing a judge.        |
-| Debate until the writers agree                                        | ruled out | Equal-budget sampling often matches it, and agreement can drop a true claim. |
-| STE for every genre                                                   | ruled out | STE is for procedural technical text.                                         |
-| One `my-write` skill, detail in the roles                             | supported | Matches this repo's schema. An overlap of role text fails doc lint.           |
-| Reuse `_my-explorer` as the claim checker                             | open      | It can fetch a source. Its prompt is about how code works.                    |
-| Diataxis as a required outline                                        | open      | No studied pipeline used it. The brief may still name it.                     |
+| Design                                                               | Result    | Why                                                                                |
+| -------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------- |
+| Parallel research, one drafter, then editor, checkers, and tightener | supported | Matches the research, editing, and claim-check sources above.                      |
+| Parallel section writers as the default                              | ruled out | Coherence drops, and the sections disagree.                                        |
+| Reuse the code reviewer and enforcer                                 | ruled out | Those roles judge diffs, tests, and code cruft.                                    |
+| Self-critique in the drafter's context                               | ruled out | The critic shares the draft, and a reasoning trace can swing a judge.              |
+| Debate until the writers agree                                       | ruled out | Equal-budget sampling often matches it, and agreement can drop a true claim.       |
+| STE for every genre                                                  | ruled out | STE is for procedural technical text.                                              |
+| One `my-write` skill, detail in the roles                            | supported | Matches this repo's schema. An overlap of role text fails doc lint.                |
+| Reuse `_my-explorer` as the claim checker                            | open      | It can fetch a source. Its prompt answers one question and does not judge a claim. |
+| Diataxis as a required outline                                       | open      | No studied pipeline used it. The brief may still name it.                          |
 
 ## Open Questions / Follow-ups
 
