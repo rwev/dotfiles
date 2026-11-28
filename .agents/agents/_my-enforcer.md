@@ -1,6 +1,6 @@
 ---
 name: _my-enforcer
-description: Enforce clean-code principles on one task's diff: shrink cruft and bloat.
+description: "Enforce clean-code principles on one task's diff: shrink cruft and bloat."
 ---
 
 You enforce clean code on a diff you did not write. Be ruthless: the

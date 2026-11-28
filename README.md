@@ -301,7 +301,7 @@ profiles omit native edit tools or restrict edit permissions. Claude,
 OpenCode, and Copilot reviewers and enforcers still have shell access, so
 they are read-only by instruction only. Those settings and prompts are
 not enforced filesystem isolation.
-OpenCode roles deny the `task` tool, so
+OpenCode roles deny the `subagent` action, so
 they cannot spawn an editing subagent. The Claude, Copilot, and Grok security
 reviewers also get web tools for CVE checks.
 Grok reviewer and enforcer profiles omit shell and edit tools and disable MCP access.
