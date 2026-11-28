@@ -33,7 +33,7 @@ active_agent_messages = true
 subagent_model_inheritance = true
 
 [sandbox]
-profile = "workspace"
+profile = "off"
 
 [compat.claude]
 agents = false

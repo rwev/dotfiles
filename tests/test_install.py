@@ -23,7 +23,7 @@ GROK_DEFAULTS = {
     'toolset': {'ask_user_question': {'timeout_secs': 600}},
     'subagents': {'enabled': True},
     'features': {'active_agent_messages': True, 'subagent_model_inheritance': True},
-    'sandbox': {'profile': 'workspace'},
+    'sandbox': {'profile': 'off'},
     'compat': {'claude': {'agents': False}},
     'permission': {'deny': [
         'Read(**/.env)', 'Read(**/.env.*)', 'Read(secrets/**)',
@@ -46,6 +46,18 @@ def grok_defaults_with(overrides):
 
     merge(defaults, overrides)
     return defaults
+
+
+def plain_scalars_with_colon_space(frontmatter):
+    offenders = []
+    for raw in frontmatter.splitlines():
+        body = raw.strip()
+        if not body or body == '---' or body.startswith('- {'):
+            continue
+        value = body.partition(': ')[2].strip()
+        if value and value[0] not in '"\'|>{[' and ': ' in value:
+            offenders.append(value)
+    return offenders
 
 
 class InstallerTests(unittest.TestCase):
@@ -179,17 +191,14 @@ class InstallerTests(unittest.TestCase):
                 'implementer': read_tools | {'search_replace', 'run_terminal_cmd'},
                 'reviewer': read_tools,
                 'enforcer': read_tools,
-                'security-reviewer': read_tools | {'web_search'},
+                'security-reviewer': read_tools | {'web_search', 'web_fetch'},
                 'explorer': {'read_file', 'grep', 'list_dir', 'run_terminal_cmd', 'web_search', 'web_fetch'},
             }[role]
             self.assertEqual(set(metadata['tools'].split(', ')), expected_tools)
             if role != 'implementer':
                 self.assertEqual(set(metadata['disallowedTools'].split(', ')), {'search_tool', 'use_tool'})
                 self.assertEqual(metadata['mcpInheritance'], 'none')
-            if role in {'reviewer', 'enforcer', 'security-reviewer'}:
-                self.assertIn('full diff and test results', metadata['description'])
-                self.assertIn('cannot run git or tests', body)
-                self.assertIn('request the missing context', body)
+            self.assertNotIn('## Grok review context', body)
             shared_body = (ROOT / '.agents/agents' / (name + '.md')).read_text().split('---', 2)[2]
             self.assertTrue(body.endswith(shared_body.lstrip('\n')))
         self.assertEqual(len(list((self.home / '.agents/skills').iterdir())), 14)
@@ -583,7 +592,7 @@ class InstallerTests(unittest.TestCase):
                     paths = [entry['path'] for entry in active]
                     grok = Path(self.env.get('GROK_HOME', self.home / '.grok'))
                     self.assertEqual(tomllib.loads((grok / 'config.toml').read_text())['sandbox'],
-                                     {'profile': 'workspace'})
+                                     {'profile': 'off'})
                     self.assertGreaterEqual(report['permissions']['loaded'],
                                             len(GROK_DEFAULTS['permission']['deny']))
                     self.assertEqual(report['permissions']['skipped'], [])
@@ -799,13 +808,30 @@ class InstallerTests(unittest.TestCase):
                           if ': ' in line and not line.startswith(' '))
             return fields, header
 
+        implementer_permissions = (
+            'permissions:\n'
+            '  - { action: edit, resource: "*", effect: allow }\n'
+            '  - { action: shell, resource: "*", effect: allow }\n'
+            '  - { action: subagent, resource: "*", effect: deny }\n'
+        )
+        readonly_permissions = (
+            'permissions:\n'
+            '  - { action: edit, resource: "*", effect: deny }\n'
+            '  - { action: shell, resource: "*", effect: allow }\n'
+            '  - { action: shell, resource: "git commit*", effect: deny }\n'
+            '  - { action: shell, resource: "git checkout*", effect: deny }\n'
+            '  - { action: shell, resource: "git reset*", effect: deny }\n'
+            '  - { action: shell, resource: "git stash*", effect: deny }\n'
+        )
+        subagent_deny = '  - { action: subagent, resource: "*", effect: deny }\n'
         for role in ['implementer', 'reviewer', 'enforcer', 'security-reviewer', 'explorer']:
             name = '_my-' + role
             canonical = frontmatter(ROOT / '.agents/agents' / (name + '.md'))[0]['description']
             claude = frontmatter(self.home / '.claude/agents' / (name + '.md'))[0]
             copilot = frontmatter(self.home / '.copilot/agents' / (name + '.agent.md'))[0]
             opencode, opencode_header = frontmatter(self.home / '.config/opencode/agents' / (name + '.md'))
-            for fields in [claude, copilot, opencode]:
+            grok = frontmatter(self.home / '.grok/agents' / (name + '.md'))[0]
+            for fields in [claude, copilot, opencode, grok]:
                 self.assertEqual(fields['description'], canonical)
             claude_tools = set(claude['tools'].split(', '))
             copilot_tools = set(json.loads(copilot['tools']))
@@ -813,16 +839,39 @@ class InstallerTests(unittest.TestCase):
             self.assertNotIn('TodoWrite', claude_tools)
             self.assertEqual({'WebFetch', 'WebSearch'} <= claude_tools, has_web)
             self.assertEqual('web' in copilot_tools, has_web)
-            self.assertEqual('\n  webfetch: allow\n' in opencode_header, role == 'explorer')
-            self.assertIn('\n  task: deny\n', opencode_header)
+            if role == 'implementer':
+                opencode_permissions = implementer_permissions
+            else:
+                opencode_permissions = readonly_permissions
+                if role == 'explorer':
+                    opencode_permissions += '  - { action: webfetch, resource: "*", effect: allow }\n'
+                opencode_permissions += subagent_deny
+            self.assertEqual(opencode['mode'], 'subagent')
+            self.assertIn(opencode_permissions, opencode_header)
+            self.assertTrue(opencode_header.rstrip().endswith(opencode_permissions.rstrip()))
             if role != 'implementer':
                 self.assertFalse({'Write', 'Edit'} & claude_tools)
                 self.assertNotIn('edit', copilot_tools)
-                self.assertIn('\n  edit: deny\n', opencode_header)
-        for name in ['_my-implementer', '_my-explorer']:
-            grok = frontmatter(self.home / '.grok/agents' / (name + '.md'))[0]
-            self.assertEqual(grok['description'],
-                             frontmatter(ROOT / '.agents/agents' / (name + '.md'))[0]['description'])
+
+    def test_agent_frontmatter_plain_scalars(self):
+        sentence = "Enforce clean-code principles on one task's diff: shrink cruft and bloat."
+        reported = plain_scalars_with_colon_space('description: ' + sentence)
+        ignored = plain_scalars_with_colon_space('description: "' + sentence + '"')
+        self.assertEqual((reported, ignored), ([sentence], []))
+        roots = [
+            ROOT / '.agents/agents',
+            ROOT / '.claude/templates/agents',
+            ROOT / '.copilot/agents',
+            ROOT / '.opencode/templates/agents',
+            ROOT / '.grok/templates/agents',
+        ]
+        offenders = []
+        for root in roots:
+            for path in sorted(root.glob('*.md')):
+                header = path.read_text().split('---', 2)[1]
+                for scalar in plain_scalars_with_colon_space(header):
+                    offenders.append(f'{path.relative_to(ROOT)}: {scalar}')
+        self.assertEqual(offenders, [])
 
     def test_json_with_existing_local_is_backed_up(self):
         directory = self.home / '.claude'
