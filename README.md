@@ -483,7 +483,6 @@ suite does not launch OpenCode or Copilot.
 dotfiles/
 ├── AGENTS.md           # Checkout guide for agents
 ├── README.md           # Human guide to this checkout
-├── writing-toolkit.md  # Design note for the writing loop
 ├── install.sh          # Module flags and install order
 ├── install/
 │   ├── common.sh       # Shared file helpers
