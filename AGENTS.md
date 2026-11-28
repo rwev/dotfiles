@@ -15,9 +15,11 @@ Keep these files separate.
 | `AGENTS.md`         | How to work inside this checkout.         |
 | `.agents/AGENTS.md` | Personal defaults for every project.      |
 
-The installer copies `.agents/AGENTS.md` into each harness home. It leaves
-this file in the checkout. Generated global instructions already load the
-personal defaults. Leave those rules in `.agents/AGENTS.md`.
+The installer inlines `.agents/AGENTS.md` into the generated instruction
+file for each harness selected on that run. The default selection is Claude
+and Grok. It leaves this file in the checkout. Persona placement is in the
+README. Generated global instructions already load the personal defaults.
+Leave those rules in `.agents/AGENTS.md`.
 
 Leave this checkout without a root `CLAUDE.md`. Grok loads `AGENTS.md` and
 `CLAUDE.md` from the same directory, and both occupy context.
@@ -39,11 +41,12 @@ python3 -m unittest discover -s tests -v
 python3 -m unittest tests.test_docs
 ```
 
-`tests/test_docs.py` lints Markdown under `.agents/` against
-`.agents/references/terms.md`. It does not lint this file.
+`tests/test_docs.py` checks schemas and tokens in Markdown under `.agents/`
+against `.agents/references/terms.md`. The same test checks anchors, links,
+and skill-agent duplication. It does not lint this file.
 
 Ask before a real install into `$HOME`. The suite uses isolated homes.
-A dry run changes nothing.
+A dry run writes nothing.
 
 ## Where to edit
 
@@ -67,7 +70,8 @@ use the tokens in `terms.md`.
 Skills and references own the loop. This section is the map. Follow the
 linked files for the rules.
 
-`my-build` is the implementation loop:
+`my-build` is the implementation loop. The steps are in
+`.agents/skills/my-build/SKILL.md`. This map uses that order:
 
 1. **Plan.** Use a `## Plan` block from `my-plan` when one exists.
    Otherwise dispatch `_my-explorer`. `my-research` answers a question
@@ -76,16 +80,20 @@ linked files for the rules.
    one commit per finished task. The rule is in
    `.agents/skills/my-build/SKILL.md`.
 3. **Implement.** Dispatch `_my-implementer` for each ready task. It
-   writes one task, test first, and reports changed paths. It does not
-   commit. See `.agents/agents/_my-implementer.md`.
+   writes one task and reports changed paths. It writes a failing test
+   first when the task has testable behavior. Docs, config, and
+   scaffolding are implemented directly. It does not commit. See
+   `.agents/agents/_my-implementer.md`.
 4. **Review.** Dispatch a fresh `_my-reviewer` on each new or changed
-   diff.
-5. **Enforce.** After that reviewer approves, dispatch a fresh
-   `_my-enforcer`.
-6. **Commit.** As soon as the task is completed, follow
+   diff. Then follow
+   [fix-cap](.agents/references/orchestration.md#fix-cap). A fresh
+   `_my-enforcer` runs only after that reviewer approves.
+5. **Commit.** As soon as the task is completed, follow
    `.agents/skills/my-commit/SKILL.md`. Do not wait for the other tasks,
    and do not ask again. The gate is
    [task-commit](.agents/references/orchestration.md#task-commit).
+6. **Final review.** After every task is committed, review the full
+   range. A fix from that pass is a new task. Run steps 3 to 5 for it.
 7. **Hand off.** Point at `my-pr`. Do not push. Leave the pull request
    unopened.
 
@@ -99,12 +107,16 @@ with your own.
 
 Caps, status tokens, and verdict tokens are in
 `.agents/references/terms.md`. Scheduling, fan-out, recovery, and the
-review brief are in `.agents/references/orchestration.md`. The loop
-steps are in `.agents/skills/my-build/SKILL.md`.
+review brief are in `.agents/references/orchestration.md`.
 
-`my-write` is the document loop. One drafter writes after an approved brief
-and outline. A fresh editor follows, then claim checkers, then a tightener.
-The steps are in `.agents/skills/my-write/SKILL.md`.
+`my-write` is the document loop. Agree a brief first. When no sources were
+supplied, the loop also requires `_my-explorer`. One drafter writes the
+outline, then the piece, after you approve the outline. Reference sections
+that do not refer to each other use one drafter each. A fresh editor
+follows. The drafter applies substance findings, and a fresh editor runs
+again. Claim checkers follow. The tightener runs only after the editor
+returns `Approved`. Outline approval is not commit approval. The loop does
+not commit. The steps are in `.agents/skills/my-write/SKILL.md`.
 
 ## Checkout constraints
 

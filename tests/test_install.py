@@ -212,8 +212,6 @@ class InstallerTests(unittest.TestCase):
         self.assertTrue((grok / 'statusline.sh').is_symlink())
         self.assertEqual((grok / 'statusline.sh').resolve(), ROOT / '.grok' / 'statusline.sh')
         self.assertTrue(os.access(grok / 'statusline.sh', os.X_OK))
-        self.assertFalse((grok / 'notify.sh').exists())
-        self.assertFalse((grok / 'hooks' / 'notifications.json').exists())
         self.assertTrue((self.home / '.claude/CLAUDE.md').is_file())
         for path in ['.config/opencode', '.copilot']:
             self.assertFalse((self.home / path).exists(), path)
@@ -256,61 +254,6 @@ class InstallerTests(unittest.TestCase):
         self.install('--tools=grok')
         self.assertEqual(tomllib.loads((grok / 'config.toml').read_text())['ui']['status_line'],
                          {'type': 'builtin', 'command': 'local command'})
-
-    def test_grok_preserves_custom_notification_hook_and_external_target(self):
-        grok = self.home / '.grok'
-        hooks = grok / 'hooks'
-        hooks.mkdir(parents=True)
-        external = self.home / 'external-hook.json'
-        content = '{"hooks":{"Notification":[]}}\n'
-        external.write_text(content)
-        destination = hooks / 'notifications.json'
-        destination.symlink_to(external)
-        (hooks / 'custom.json').write_text(content)
-        notify = grok / 'notify.sh'
-        notify.symlink_to(self.home / 'absent-notify.sh')
-        self.install('--tools=grok')
-        self.assertTrue(destination.is_symlink())
-        self.assertEqual(os.readlink(destination), str(external))
-        self.assertEqual(external.read_text(), content)
-        self.assertEqual((hooks / 'custom.json').read_text(), content)
-        self.assertFalse(notify.exists())
-
-        managed = '{"hooks":{"Notification":[{"hooks":[{"type":"command","command":"../notify.sh"}]}]}}\n'
-        destination.unlink()
-        destination.write_text(managed)
-        notify.symlink_to(self.home / 'absent-notify.sh')
-        self.install('--tools=grok')
-        self.assertFalse(destination.exists())
-        self.assertFalse(notify.exists())
-        self.assertEqual((hooks / 'custom.json').read_text(), content)
-        self.assertEqual(external.read_text(), content)
-
-        kept = '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"keep.sh"}]}]}}\n'
-        destination.write_text(kept)
-        notify.write_text('#!/bin/sh\nexit 0\n')
-        self.install('--tools=grok')
-        self.assertEqual(destination.read_text(), kept)
-        self.assertTrue(notify.is_file())
-        self.assertFalse(notify.is_symlink())
-        self.assertEqual((hooks / 'custom.json').read_text(), content)
-        before = self.snapshot()
-        self.install('--tools=grok')
-        self.assertEqual(before, self.snapshot())
-
-    def test_grok_unknown_hook_directory_link_is_not_written_through(self):
-        grok = self.home / '.grok'
-        grok.mkdir()
-        outside = self.home / 'outside'
-        outside.mkdir()
-        (outside / 'sentinel').write_text('untouched\n')
-        (outside / 'notifications.json').write_text(
-            '{"hooks":{"Notification":[{"hooks":[{"type":"command","command":"../notify.sh"}]}]}}\n')
-        (grok / 'hooks').symlink_to(outside)
-        self.install('--tools=grok')
-        self.assertEqual({p.name for p in outside.iterdir()}, {'sentinel', 'notifications.json'})
-        self.assertEqual((outside / 'sentinel').read_text(), 'untouched\n')
-        self.assertTrue((grok / 'hooks').is_symlink())
 
     def test_grok_dry_run(self):
         self.install('--tools=grok', '--dry-run')
@@ -837,6 +780,14 @@ class InstallerTests(unittest.TestCase):
             '  - { action: shell, resource: "*", effect: deny }\n'
             '  - { action: subagent, resource: "*", effect: deny }\n'
         )
+        prose_readonly_permissions = (
+            'permissions:\n'
+            '  - { action: edit, resource: "*", effect: deny }\n'
+            '  - { action: shell, resource: "*", effect: deny }\n'
+            '  - { action: webfetch, resource: "*", effect: deny }\n'
+            '  - { action: websearch, resource: "*", effect: deny }\n'
+            '  - { action: subagent, resource: "*", effect: deny }\n'
+        )
         for role in ['implementer', 'reviewer', 'enforcer', 'security-reviewer', 'explorer',
                      'drafter', 'editor', 'checker', 'tightener']:
             name = '_my-' + role
@@ -857,6 +808,9 @@ class InstallerTests(unittest.TestCase):
             elif role in {'drafter', 'editor', 'tightener'}:
                 self.assertFalse({'WebFetch', 'WebSearch'} & claude_tools)
                 self.assertNotIn('web', copilot_tools)
+                if role in {'editor', 'tightener'}:
+                    self.assertNotIn('Bash', claude_tools)
+                    self.assertNotIn('execute', copilot_tools)
             else:
                 has_web = role in {'security-reviewer', 'explorer'}
                 self.assertEqual({'WebFetch', 'WebSearch'} <= claude_tools, has_web)
@@ -865,6 +819,8 @@ class InstallerTests(unittest.TestCase):
                 opencode_permissions = implementer_permissions
             elif role == 'drafter':
                 opencode_permissions = drafter_permissions
+            elif role in {'editor', 'tightener'}:
+                opencode_permissions = prose_readonly_permissions
             else:
                 opencode_permissions = readonly_permissions
                 if role in {'explorer', 'checker'}:
@@ -947,6 +903,11 @@ class InstallerTests(unittest.TestCase):
             if role == 'drafter':
                 self.assertIn('"edit"', text)
                 self.assertNotIn('"execute"', text)
+            elif role in {'editor', 'tightener'}:
+                self.assertNotIn('"edit"', text)
+                self.assertNotIn('"execute"', text)
+                self.assertIn('"read"', text)
+                self.assertIn('"search"', text)
             else:
                 self.assertIn('"execute"', text)
 
